@@ -24,12 +24,13 @@ esphome/
     fan.yaml            jeden PWM ventilátor + tachometr (vkládá se 1–2×)
 hw/
   fan_grille.scad       parametrická vrtací šablona a krycí mřížka ventilátoru
+  htu21d_case.scad      kryt čidla HTU21D s magnety, vodiče skrz stěnu
   README.md             parametry, postup vrtání, export STL
 homeassistant/
   dashboard.yaml        přehled pro analýzu (karty, grafy)
 scripts/
   esphome.sh            config / compile / run / logs
-  scad.sh               export STL šablony a mřížky do hw/stl/
+  scad.sh               export STL (šablona, mřížka, kryt čidla) do hw/stl/
 ```
 
 ## Použití v ESPHome (Home Assistant add-on / dashboard)
@@ -62,7 +63,7 @@ do `~/.cache/esphome-susicka-maso`.
 - [Zapojení](docs/zapojeni.md)
 - [Analýza, automatický režim, program a výpadky](docs/analyza.md)
 - [Profily sušení](docs/profily.md)
-- [Šablona a mřížka ventilátoru](hw/README.md)
+- [Šablona a mřížka ventilátoru, kryt čidla](hw/README.md)
 
 ## TODO
 
@@ -72,6 +73,8 @@ do `~/.cache/esphome-susicka-maso`.
 - [x] Dlouhodobý program, detekce výpadků, statistiky (zápis do flash 1× za 15 min)
 - [x] Fázové profily sušení s alarmy mezí
 - [x] Parametrická vrtací šablona a mřížka ventilátoru (OpenSCAD)
+- [x] Kryt HTU21D s magnety (OpenSCAD)
+- [ ] Změřit desku HTU21D a ověřit kryt tiskem
 - [x] Watchdog čidla (restart při chybějících datech, zdvojování intervalu)
 - [ ] Ověřit na hardwaru: watchdog čidla (test build `-s sensor_reboot_timeout 60`)
 - [ ] Ověřit na hardwaru: detekce výpadku odpojením napájení, dokončení programu

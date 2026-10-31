@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Usage: scripts/scad.sh [fan_size] [openscad -D overrides...]
-# Exports template and grille STL into hw/stl/ (ignored by git).
+# Usage: scripts/scad.sh [fan_size] [openscad -D overrides...]   fan template + grille
+#        scripts/scad.sh case [openscad -D overrides...]       HTU21D sensor case
+# Exports STL into hw/stl/ (ignored by git).
 set -euo pipefail
 
 cd "$(dirname "$0")/../hw"
@@ -17,6 +18,17 @@ if [[ -z "$openscad" ]]; then
   fi
 fi
 
+defs=()
+
+if [[ "${1:-}" == "case" ]]; then
+  shift
+  for d in "$@"; do defs+=(-D "$d"); done
+  mkdir -p stl
+  "$openscad" -o stl/htu21d_case.stl ${defs[@]+"${defs[@]}"} htu21d_case.scad
+  echo "-> hw/stl/htu21d_case.stl"
+  exit 0
+fi
+
 size="${1:-120}"
 [[ $# -gt 0 ]] && shift
 if ! [[ "$size" =~ ^[0-9]+$ ]]; then
@@ -24,7 +36,6 @@ if ! [[ "$size" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
-defs=()
 for d in "$@"; do defs+=(-D "$d"); done
 
 mkdir -p stl
