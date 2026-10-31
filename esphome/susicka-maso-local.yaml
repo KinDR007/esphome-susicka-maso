@@ -5,7 +5,8 @@ substitutions:
   friendly_name: "Sušička na maso"
   i2c_sda: GPIO5   # D4
   i2c_scl: GPIO6   # D5
-  fan_pwm_inverted: "true"
+  # "false" = PWM wire directly on GPIO, "true" = through N-MOSFET (docs/zapojeni.md)
+  fan_pwm_inverted: "false"
 
 packages:
   base: !include packages/base.yaml

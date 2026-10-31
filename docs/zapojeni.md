@@ -22,11 +22,11 @@
 | 5V       | –      | napájení 5 V vstup  | step-down výstup přes D1                  |
 | GND      | –      | zem                 | společná zem                              |
 | 3V3      | –      | výstup 3,3 V        | HTU21D VIN, pull-upy tachometrů           |
-| D0       | GPIO1  | PWM ventilátor 1    | gate Q1 (přes 100 Ω)                      |
+| D0       | GPIO1  | PWM ventilátor 1    | PWM pin 4 ventilátoru 1 (nebo gate Q1)    |
 | D1       | GPIO2  | tachometr vent. 1   | TACH ventilátoru 1 (pull-up 10 k na 3V3)  |
 | D4       | GPIO5  | I2C SDA             | HTU21D SDA                                |
 | D5       | GPIO6  | I2C SCL             | HTU21D SCL                                |
-| D8       | GPIO7  | PWM ventilátor 2    | gate Q2 (přes 100 Ω)                      |
+| D8       | GPIO7  | PWM ventilátor 2    | PWM pin 4 ventilátoru 2 (nebo gate Q2)    |
 | D9       | GPIO8  | tachometr vent. 2   | TACH ventilátoru 2 (pull-up 10 k na 3V3)  |
 | –        | GPIO21 | stavová LED         | LED na desce (není třeba zapojovat)       |
 
@@ -46,7 +46,7 @@ Konektor (Intel 4-Wire PWM Fan spec):
 | 3   | zelená          | TACH, open-collector, 2 pulzy/otáčku |
 | 4   | modrá           | PWM, 25 kHz, ventilátor má vlastní pull-up na 3,3–5 V |
 
-### Řízení PWM přes N-MOSFET (doporučeno)
+### Řízení PWM přes N-MOSFET (volitelné)
 
 GPIO ESP32 nejsou 5V tolerantní a PWM vstup ventilátoru je vytažený na až 5 V.
 Open-drain spínání tranzistorem tento problém odstraní.
@@ -68,11 +68,16 @@ Open-drain spínání tranzistorem tento problém odstraní.
   a ten běží na **100 %**. Při výpadku řídicí jednotky tak sušička dál větrá (fail-safe).
 - Q1 = 2N7002 (SOT-23), BS170 (TO-92) nebo BSS138. Ventilátor 2 analogicky s Q2 na D8.
 
-### Přímé připojení (bez tranzistoru)
+### Přímé připojení (bez tranzistoru, aktuální konfigurace)
 
-PWM pin ventilátoru přímo na GPIO, `fan_pwm_inverted: "false"`. Funguje s většinou
-ventilátorů, ale do GPIO přes interní pull-up ventilátoru teče malý proud z 5 V
-a při resetu ventilátor neběží na plno. Pouze pro testování.
+PWM pin ventilátoru (pin 4) přímo na GPIO (D0, resp. D8), `fan_pwm_inverted: "false"`.
+
+- Funguje s většinou ventilátorů: PWM vstup má v ventilátoru pull-up na 3,3–5 V,
+  ESP stahuje linku do nuly a v 1 drží 3,3 V, což ventilátor bere jako logickou 1.
+- Je-li pull-up ventilátoru na 5 V, teče do GPIO přes ochrannou diodu proud
+  řádově 0,1 mA ((5 − 3,6) V / ~10 kΩ). Je to mimo specifikaci ESP32, v praxi obvykle bez potíží.
+  Volitelně sériový rezistor 1 kΩ mezi GPIO a PWM pin proud omezí.
+- Během resetu a bootu je GPIO ve vysoké impedanci a ventilátor díky svému pull-upu běží na 100 %.
 
 ### Tachometr
 

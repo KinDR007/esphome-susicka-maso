@@ -7,8 +7,8 @@ substitutions:
   friendly_name: "Sušička na maso"
   i2c_sda: GPIO5   # D4
   i2c_scl: GPIO6   # D5
-  # "true" when PWM is driven through N-MOSFET (recommended), "false" for direct drive
-  fan_pwm_inverted: "true"
+  # "false" = PWM wire directly on GPIO, "true" = through N-MOSFET (docs/zapojeni.md)
+  fan_pwm_inverted: "false"
 
 packages:
   susicka:
