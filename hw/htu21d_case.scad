@@ -17,9 +17,10 @@ top_gap = 1.3;
 wire_space = 4;
 
 /* [Shell] */
-wall = 2;
-roof = 1.6;
-corner_r = 4;
+// Side wall and roof thickness (0.6 = 0.4 nozzle with Arachne, 0.8 = 2 perimeters)
+wall = 0.6;
+// Cavity corner radius, the PCB corners must fit (max ~ pcb_clear / 0.29)
+inner_r = 0.5;
 // Window above the sensor chip
 window = 3.6;
 // Window offset from PCB center, away from the header side (+Y = header)
@@ -44,7 +45,7 @@ magnet_clear = 0.2;
 // Material around magnet pockets
 magnet_wall = 1.2;
 // Material above magnet pockets
-magnet_skin = 0.8;
+magnet_skin = 0.6;
 
 /* [Hidden] */
 $fn = 64;
@@ -55,7 +56,9 @@ cav_l = pcb_l + 2 * pcb_clear;
 cav_h = wire_space + pcb_t + top_gap;
 body_w = cav_w + 2 * wall;
 body_l = cav_l + 2 * wall;
-body_h = cav_h + roof;
+body_h = cav_h + wall;
+// Outer shape is the cavity offset by wall, so the shell is uniform everywhere
+corner_r = inner_r + wall;
 pocket_d = magnet_d + magnet_clear;
 flange_h = magnets > 0 ? magnet_h + magnet_skin : 0;
 // Magnet centers on the cavity diagonals, keeping magnet_wall to the cavity corner
@@ -67,20 +70,29 @@ flange_w = 2 * (mag_off[0] + flange_r);
 flange_l = 2 * (mag_off[1] + flange_r);
 pcb_z = wire_space;
 
-assert(body_h > corner_r, "body too low for corner radius, reduce corner_r");
+assert(wall > 0 && inner_r > 0, "wall and inner_r must be positive");
 assert(window / 2 + abs(window_offset) < cav_l / 2, "window outside cavity");
 
 module rounded_rect(w, l, r) {
     offset(r = r) square([w - 2 * r, l - 2 * r], center = true);
 }
 
-module body() {
+// Box with corner radius r on vertical and top edges, flat bottom at z = 0
+module rounded_box(w, l, h, r) {
     hull()
         for (x = [-1, 1], y = [-1, 1])
-            translate([x * (body_w / 2 - corner_r), y * (body_l / 2 - corner_r), 0]) {
-                cylinder(r = corner_r, h = body_h - corner_r);
-                translate([0, 0, body_h - corner_r]) sphere(r = corner_r);
+            translate([x * (w / 2 - r), y * (l / 2 - r), 0]) {
+                cylinder(r = r, h = h - r);
+                translate([0, 0, h - r]) sphere(r = r);
             }
+}
+
+module body() {
+    rounded_box(body_w, body_l, body_h, corner_r);
+}
+
+module cavity() {
+    translate([0, 0, -eps]) rounded_box(cav_w, cav_l, cav_h + eps, inner_r);
 }
 
 module flange() {
@@ -112,10 +124,10 @@ module case() {
             if (magnets > 0) flange();
         }
         // Cavity, open at the back
-        translate([0, 0, -eps]) linear_extrude(cav_h + eps) rounded_rect(cav_w, cav_l, 0.5);
+        cavity();
         // Sensor window
         translate([0, -window_offset, cav_h - eps])
-            linear_extrude(roof + 2) square(window, center = true);
+            linear_extrude(wall + 2) square(window, center = true);
         // Vent slots in the side walls next to the chip, above the PCB
         if (vents)
             for (x = [-1, 1], i = [0 : vent_count - 1])
@@ -128,7 +140,7 @@ module case() {
     }
     intersection() {
         retention();
-        translate([0, 0, -eps]) linear_extrude(cav_h + eps) rounded_rect(cav_w, cav_l, 0.5);
+        cavity();
     }
 }
 

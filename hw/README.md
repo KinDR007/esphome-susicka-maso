@@ -62,11 +62,17 @@ Změny proti originálu:
 - rohová osazení drží čip 1,3 mm pod stropem, výstupky (`bump`) drží desku zespodu,
 - boční štěrbiny u čidla pro rychlejší odezvu (`vents`).
 
-Výchozí rozměry: dutina 16 × 16 mm (deska 15,6 mm + vůle), tělo 20 × 20 × 8,5 mm,
-příruba 31,3 × 31,3 × 2,8 mm, magnety Ø6 × 2 mm (kapsa Ø6,2).
+Výchozí rozměry: stěna a strop 0,6 mm, dutina 16 × 16 mm (deska 15,6 mm + vůle),
+tělo 17,2 × 17,2 × 7,5 mm, příruba 31,3 × 31,3 × 2,6 mm, magnety Ø6 × 2 mm (kapsa Ø6,2,
+nad magnetem 0,6 mm).
+
+Stěna 0,6 mm se tiskne tryskou 0,4 mm s proměnnou šířkou čáry (Arachne, výchozí v PrusaSliceru,
+OrcaSliceru i Cuře); 0,8 mm = dva perimetry, pokud slicer 0,6 mm vynechává.
+Vnější zaoblení = `inner_r + wall`, dutina kopíruje vnější tvar, stěna je všude stejná.
 
 | Parametr | Výchozí | Popis |
 |----------|---------|-------|
+| `wall` | 0,6 | tloušťka stěn a stropu |
 | `pcb_w`, `pcb_l` | 15,6 | rozměr desky (změřit konkrétní modul) |
 | `window_offset` | 3,5 | posun okna nad čip, směrem od konektoru (konektor = +Y) |
 | `wire_space` | 4 | prostor pro vodiče mezi deskou a stěnou |
