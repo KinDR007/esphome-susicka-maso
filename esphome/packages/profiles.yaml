@@ -1,0 +1,250 @@
+# Drying profiles with stages, see docs/profily.md.
+# Requires: control.yaml (target_rh, rh_band, min_duty, max_duty, temp_max),
+#           runtime.yaml (prog_active, prog_elapsed_s, prog_duration_d),
+#           htu21d.yaml (dryer_temperature, dryer_humidity)
+#
+# While a program runs with a profile other than "Vlastní", the stage is selected
+# from program elapsed time and its parameters are written to the control numbers
+# on every stage change. Stages marked with an action raise "Vyžadován zásah" when
+# they end; the schedule keeps running, the flag is cleared by "Zásah proveden".
+# Profile table: profile_update script below.
+
+globals:
+  - id: profile_stage
+    type: int
+    restore_value: true
+    initial_value: "-1"
+  # Stage whose end action is pending, -1 = none
+  - id: profile_action_stage
+    type: int
+    restore_value: true
+    initial_value: "-1"
+  - id: profile_last_elapsed
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+  - id: profile_temp_out
+    type: bool
+    restore_value: false
+    initial_value: "false"
+  - id: profile_rh_out
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+select:
+  - platform: template
+    id: dryer_profile
+    name: "Profil"
+    icon: mdi:food-steak
+    options:
+      - "Vlastní"
+      - "Biltong teplý"
+      - "Biltong / droëwors tradiční"
+      - "Bresaola"
+      - "Fermentovaný salám (sušení)"
+      - "Bündnerfleisch"
+      - "Pastırma"
+    initial_option: "Vlastní"
+    optimistic: true
+    restore_value: true
+    set_action:
+      - lambda: |-
+          id(profile_stage) = -1;
+          id(profile_action_stage) = -1;
+      - delay: 100ms
+      - script.execute:
+          id: profile_update
+          set_duration: true
+
+button:
+  - platform: template
+    name: "Zásah proveden"
+    icon: mdi:check
+    on_press:
+      - lambda: id(profile_action_stage) = -1;
+      - script.execute:
+          id: profile_update
+          set_duration: false
+
+binary_sensor:
+  - platform: template
+    name: "Vyžadován zásah"
+    icon: mdi:hand-back-right
+    lambda: return id(profile_action_stage) >= 0;
+  - platform: template
+    name: "Teplota mimo profil"
+    device_class: problem
+    lambda: return id(profile_temp_out);
+    filters:
+      - delayed_on: 30min
+      - delayed_off: 5min
+  - platform: template
+    name: "Vlhkost mimo profil"
+    device_class: problem
+    lambda: return id(profile_rh_out);
+    filters:
+      - delayed_on: 30min
+      - delayed_off: 5min
+
+sensor:
+  - platform: template
+    id: profile_next_h
+    name: "Do další fáze"
+    icon: mdi:timer-outline
+    unit_of_measurement: "h"
+    accuracy_decimals: 1
+    update_interval: never
+
+text_sensor:
+  - platform: template
+    id: profile_stage_text
+    name: "Fáze profilu"
+    icon: mdi:stairs
+  - platform: template
+    id: profile_action_text
+    name: "Požadovaný zásah"
+    icon: mdi:hand-back-right
+
+script:
+  - id: profile_update
+    mode: queued
+    parameters:
+      set_duration: bool
+    then:
+      - lambda: |-
+          struct Stage {
+            float hours;
+            float rh, band, dmin, dmax, tmax;  // control parameters
+            float t_lo, t_hi, rh_lo, rh_hi;    // alarm limits
+            const char *name;
+            const char *action;                // manual step at stage end, nullptr = none
+          };
+          struct Profile {
+            const Stage *stages;
+            size_t n;
+          };
+          // hours, RH, band, min%, max%, Tmax | T lo, T hi, RH lo, RH hi
+          static const Stage biltong_warm[] = {
+              {24, 55, 15, 40, 100, 24, 18, 26, 30, 70, "Náběh", nullptr},
+              {96, 50, 15, 40, 100, 33, 20, 35, 25, 60, "Sušení", nullptr},
+          };
+          static const Stage biltong_trad[] = {
+              {144, 65, 10, 30, 80, 20, 12, 22, 45, 80, "Sušení", nullptr},
+          };
+          static const Stage bresaola[] = {
+              {168, 80, 8, 15, 60, 15, 10, 16, 70, 90, "Náběh", nullptr},
+              {840, 75, 8, 15, 50, 15, 10, 16, 65, 85, "Sušení", nullptr},
+          };
+          static const Stage salami[] = {
+              {168, 85, 6, 30, 80, 15, 10, 16, 78, 95, "Osychání", nullptr},
+              {336, 80, 6, 20, 60, 15, 10, 16, 70, 88, "Sušení", nullptr},
+              {336, 75, 6, 15, 50, 15, 10, 16, 65, 82, "Dosoušení", nullptr},
+          };
+          static const Stage buendner[] = {
+              {504, 80, 8, 20, 60, 14, 8, 18, 70, 88, "Sušení 1", "Lisování 1"},
+              {672, 77, 8, 20, 60, 14, 8, 18, 68, 85, "Sušení 2", "Lisování 2"},
+              {672, 75, 8, 15, 50, 14, 8, 18, 65, 85, "Sušení 3", "Lisování 3"},
+              {504, 72, 8, 15, 50, 14, 8, 18, 62, 82, "Dosoušení", nullptr},
+          };
+          static const Stage pastirma[] = {
+              {144, 80, 8, 20, 70, 16, 12, 18, 70, 88, "Sušení 15 °C", "Lisování"},
+              {120, 70, 10, 25, 80, 21, 16, 23, 60, 80, "Sušení 20 °C", "Lisování"},
+              {120, 70, 10, 25, 80, 21, 16, 23, 60, 80, "Sušení 20 °C", "Nanést çemen (1 den v lednici)"},
+              {240, 70, 10, 25, 80, 21, 16, 23, 60, 80, "Dosoušení", nullptr},
+          };
+          static const Profile profiles[] = {
+              {nullptr, 0},
+              {biltong_warm, 2},
+              {biltong_trad, 1},
+              {bresaola, 2},
+              {salami, 3},
+              {buendner, 4},
+              {pastirma, 4},
+          };
+          static const size_t n_profiles = sizeof(profiles) / sizeof(profiles[0]);
+
+          auto publish_text = [](text_sensor::TextSensor *s, const std::string &v) {
+            if (!s->has_state() || s->state != v)
+              s->publish_state(v);
+          };
+
+          const size_t p = id(dryer_profile).active_index().value_or(0);
+          const Profile *pr = p < n_profiles && profiles[p].n > 0 ? &profiles[p] : nullptr;
+
+          if (pr != nullptr && id(profile_action_stage) >= (int) pr->n)
+            id(profile_action_stage) = -1;
+          publish_text(id(profile_action_text),
+                       pr != nullptr && id(profile_action_stage) >= 0 ? pr->stages[id(profile_action_stage)].action : "–");
+
+          if (pr == nullptr) {
+            id(profile_stage) = -1;
+            id(profile_temp_out) = false;
+            id(profile_rh_out) = false;
+            publish_text(id(profile_stage_text), "Vlastní nastavení");
+            id(profile_next_h).publish_state(NAN);
+            return;
+          }
+
+          float total_h = 0;
+          for (size_t i = 0; i < pr->n; i++)
+            total_h += pr->stages[i].hours;
+          if (set_duration)
+            id(prog_duration_d).make_call().set_value(std::ceil(total_h / 12.0f) / 2.0f).perform();
+
+          if (!id(prog_active)) {
+            id(profile_stage) = -1;
+            id(profile_temp_out) = false;
+            id(profile_rh_out) = false;
+            publish_text(id(profile_stage_text), "Čeká na start programu");
+            id(profile_next_h).publish_state(NAN);
+            return;
+          }
+
+          const uint32_t el = id(prog_elapsed_s);
+          if (el + 60 < id(profile_last_elapsed))
+            id(profile_stage) = -1;  // program restarted
+          id(profile_last_elapsed) = el;
+
+          const float h = el / 3600.0f;
+          float acc = 0;
+          size_t i = 0;
+          for (; i + 1 < pr->n; i++) {
+            if (h < acc + pr->stages[i].hours)
+              break;
+            acc += pr->stages[i].hours;
+          }
+          const Stage &s = pr->stages[i];
+
+          if ((int) i != id(profile_stage)) {
+            const int prev = id(profile_stage);
+            if (prev >= 0 && (int) i > prev && pr->stages[prev].action != nullptr) {
+              id(profile_action_stage) = prev;
+              publish_text(id(profile_action_text), pr->stages[prev].action);
+              ESP_LOGW("profile", "Action required: %s", pr->stages[prev].action);
+            }
+            id(target_rh).make_call().set_value(s.rh).perform();
+            id(rh_band).make_call().set_value(s.band).perform();
+            id(min_duty).make_call().set_value(s.dmin).perform();
+            id(max_duty).make_call().set_value(s.dmax).perform();
+            id(temp_max).make_call().set_value(s.tmax).perform();
+            id(profile_stage) = i;
+            ESP_LOGI("profile", "Stage %u/%u: %s", (unsigned) i + 1, (unsigned) pr->n, s.name);
+          }
+
+          char buf[64];
+          snprintf(buf, sizeof(buf), "%u/%u %s", (unsigned) i + 1, (unsigned) pr->n, s.name);
+          publish_text(id(profile_stage_text), buf);
+          id(profile_next_h).publish_state(i + 1 < pr->n ? acc + s.hours - h : NAN);
+
+          const float t = id(dryer_temperature).state;
+          const float rh = id(dryer_humidity).state;
+          id(profile_temp_out) = !std::isnan(t) && (t < s.t_lo || t > s.t_hi);
+          id(profile_rh_out) = !std::isnan(rh) && (rh < s.rh_lo || rh > s.rh_hi);
+
+interval:
+  - interval: 60s
+    then:
+      - script.execute:
+          id: profile_update
+          set_duration: false

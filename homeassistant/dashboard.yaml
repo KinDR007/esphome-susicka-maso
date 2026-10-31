@@ -7,6 +7,14 @@ cards:
   - type: entities
     title: Program
     entities:
+      - entity: select.susicka_na_maso_profil
+      - entity: sensor.susicka_na_maso_faze_profilu
+      - entity: sensor.susicka_na_maso_do_dalsi_faze
+      - entity: binary_sensor.susicka_na_maso_vyzadovan_zasah
+      - entity: sensor.susicka_na_maso_pozadovany_zasah
+      - entity: button.susicka_na_maso_zasah_proveden
+      - entity: binary_sensor.susicka_na_maso_teplota_mimo_profil
+      - entity: binary_sensor.susicka_na_maso_vlhkost_mimo_profil
       - entity: number.susicka_na_maso_program_delka
       - entity: button.susicka_na_maso_program_start
       - entity: button.susicka_na_maso_program_stop

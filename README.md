@@ -10,6 +10,7 @@ a evidence výpadků napájení.
 docs/
   analyza.md            požadavky, volba řešení, algoritmus automatiky, rizika
   zapojeni.md           pinout, schémata zapojení, kusovník
+  profily.md            rešerše a profily sušení se zdroji
 esphome/
   susicka-maso.yaml     konfigurace zařízení, balíčky stahuje z GitHubu
   susicka-maso-local.yaml  totéž s lokálními balíčky (vývoj)
@@ -19,6 +20,7 @@ esphome/
     htu21d.yaml         I2C + teplota/vlhkost
     control.yaml        režimy a automatická regulace
     runtime.yaml        dlouhodobý program, výpadky, statistiky provozu
+    profiles.yaml       fázové profily sušení (biltong, bresaola, salám, ...)
     fan.yaml            jeden PWM ventilátor + tachometr (vkládá se 1–2×)
 homeassistant/
   dashboard.yaml        přehled pro analýzu (karty, grafy)
@@ -55,6 +57,7 @@ do `~/.cache/esphome-susicka-maso`.
 
 - [Zapojení](docs/zapojeni.md)
 - [Analýza, automatický režim, program a výpadky](docs/analyza.md)
+- [Profily sušení](docs/profily.md)
 
 ## TODO
 
@@ -62,5 +65,7 @@ do `~/.cache/esphome-susicka-maso`.
 - [x] Balíčky na GitHubu, ověřeno stažení přes `config remote`
 - [ ] Ověřit na hardwaru: směr PWM (MOSFET), RPM proti údaji výrobce, fail-safe při resetu
 - [x] Dlouhodobý program, detekce výpadků, statistiky (zápis do flash 1× za 15 min)
+- [x] Fázové profily sušení s alarmy mezí
 - [ ] Ověřit na hardwaru: detekce výpadku odpojením napájení, dokončení programu
-- [ ] Doladit výchozí parametry automatiky podle reálné komory
+- [ ] Doladit výchozí parametry automatiky a profilů podle reálné komory
+- [ ] Volitelně: tenzometr HX711 (konec podle úbytku hmotnosti), SHT41 místo HTU21D
