@@ -51,3 +51,10 @@ do `~/.cache/esphome-susicka-maso`.
 
 - [Zapojení](docs/zapojeni.md)
 - [Analýza a automatický režim](docs/analyza.md)
+
+## TODO
+
+- [x] Konfigurace ESPHome, validace a kompilace (ESPHome 2026.5)
+- [x] Balíčky na GitHubu, ověřeno stažení přes `config remote`
+- [ ] Ověřit na hardwaru: směr PWM (MOSFET), RPM proti údaji výrobce, fail-safe při resetu
+- [ ] Doladit výchozí parametry automatiky podle reálné komory
