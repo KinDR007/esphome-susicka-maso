@@ -1,0 +1,47 @@
+# One 4-pin PWM fan: 25 kHz PWM output + tachometer (2 pulses per revolution).
+# Include once per fan with vars:
+#   fan_id:   unique id prefix (fan1, fan2)
+#   fan_name: entity name prefix
+#   pwm_pin:  GPIO driving the PWM line (through N-MOSFET, see docs/zapojeni.md)
+#   tach_pin: GPIO reading the tach line
+# Requires substitution: fan_pwm_inverted ("true" with MOSFET, "false" for direct drive)
+# Requires global fan_duty (0..1) from control.yaml.
+
+output:
+  - platform: ledc
+    id: ${fan_id}_pwm
+    pin: ${pwm_pin}
+    frequency: 25000Hz
+    inverted: ${fan_pwm_inverted}
+
+sensor:
+  - platform: pulse_counter
+    id: ${fan_id}_rpm
+    name: "${fan_name} otáčky"
+    pin:
+      number: ${tach_pin}
+      mode:
+        input: true
+        pullup: true
+    unit_of_measurement: "RPM"
+    icon: mdi:fan
+    accuracy_decimals: 0
+    internal_filter: 13us
+    update_interval: 5s
+    filters:
+      - multiply: 0.5
+
+binary_sensor:
+  - platform: template
+    name: "${fan_name} porucha"
+    device_class: problem
+    lambda: |-
+      float rpm = id(${fan_id}_rpm).state;
+      return id(fan_duty) >= 0.2f && !std::isnan(rpm) && rpm < 200.0f;
+    filters:
+      - delayed_on: 20s
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: id(${fan_id}_pwm).set_level(id(fan_duty));

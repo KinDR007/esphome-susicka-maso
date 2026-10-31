@@ -1,0 +1,176 @@
+# Fan control: mode select (auto / manual / off) and automatic regulation.
+# Requires ids: dryer_temperature, dryer_humidity (htu21d.yaml)
+# Provides global fan_duty (0..1) consumed by every fan.yaml instance.
+#
+# Auto mode (see docs/analyza.md):
+#   duty_rh = min + (max - min) * clamp((RH - target_rh) / rh_band, 0, 1)
+#   duty_t  = min + (max - min) * clamp((T - temp_max) / 3 °C, 0, 1)
+#   duty    = max(duty_rh, duty_t), fallback_duty when RH is unavailable
+# Changes are rate-limited to ramp_step per second.
+
+substitutions:
+  ramp_step: "0.05"
+
+globals:
+  - id: fan_duty
+    type: float
+    restore_value: false
+    initial_value: "0.0"
+
+select:
+  - platform: template
+    id: dryer_mode
+    name: "Režim"
+    icon: mdi:cog
+    options:
+      - "Automaticky"
+      - "Ručně"
+      - "Vypnuto"
+    initial_option: "Automaticky"
+    optimistic: true
+    restore_value: true
+
+number:
+  - platform: template
+    id: target_rh
+    name: "Cílová vlhkost"
+    icon: mdi:water-percent
+    unit_of_measurement: "%"
+    min_value: 30
+    max_value: 90
+    step: 1
+    initial_value: 60
+    optimistic: true
+    restore_value: true
+    entity_category: config
+  - platform: template
+    id: rh_band
+    name: "Pásmo regulace vlhkosti"
+    unit_of_measurement: "%"
+    min_value: 2
+    max_value: 40
+    step: 1
+    initial_value: 15
+    optimistic: true
+    restore_value: true
+    entity_category: config
+  - platform: template
+    id: temp_max
+    name: "Maximální teplota"
+    icon: mdi:thermometer-high
+    unit_of_measurement: "°C"
+    min_value: 10
+    max_value: 45
+    step: 0.5
+    initial_value: 28
+    optimistic: true
+    restore_value: true
+    entity_category: config
+  - platform: template
+    id: min_duty
+    name: "Minimální výkon"
+    unit_of_measurement: "%"
+    min_value: 0
+    max_value: 100
+    step: 1
+    initial_value: 25
+    optimistic: true
+    restore_value: true
+    entity_category: config
+  - platform: template
+    id: max_duty
+    name: "Maximální výkon"
+    unit_of_measurement: "%"
+    min_value: 0
+    max_value: 100
+    step: 1
+    initial_value: 100
+    optimistic: true
+    restore_value: true
+    entity_category: config
+  - platform: template
+    id: fallback_duty
+    name: "Nouzový výkon"
+    unit_of_measurement: "%"
+    min_value: 0
+    max_value: 100
+    step: 1
+    initial_value: 60
+    optimistic: true
+    restore_value: true
+    entity_category: config
+  - platform: template
+    id: manual_duty
+    name: "Ruční výkon"
+    icon: mdi:fan
+    unit_of_measurement: "%"
+    min_value: 0
+    max_value: 100
+    step: 1
+    initial_value: 50
+    optimistic: true
+    restore_value: true
+
+sensor:
+  - platform: template
+    id: fan_duty_sensor
+    name: "Výkon ventilátorů"
+    icon: mdi:fan
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: return id(fan_duty) * 100.0f;
+
+text_sensor:
+  - platform: template
+    id: control_state
+    name: "Stav regulace"
+    icon: mdi:information-outline
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          auto clamp01 = [](float v) { return std::max(0.0f, std::min(1.0f, v)); };
+          const float lo = id(min_duty).state / 100.0f;
+          const float hi = std::max(lo, id(max_duty).state / 100.0f);
+          const float rh = id(dryer_humidity).state;
+          const float t = id(dryer_temperature).state;
+          const size_t mode = id(dryer_mode).active_index().value_or(0);
+
+          float target;
+          const char *state;
+          if (mode == 2) {
+            target = 0.0f;
+            state = "Vypnuto";
+          } else if (mode == 1) {
+            target = id(manual_duty).state / 100.0f;
+            state = "Ručně";
+          } else if (std::isnan(rh)) {
+            target = id(fallback_duty).state / 100.0f;
+            state = "Porucha čidla, nouzový výkon";
+          } else {
+            const float k_rh = clamp01((rh - id(target_rh).state) / id(rh_band).state);
+            const float k_t = std::isnan(t) ? 0.0f : clamp01((t - id(temp_max).state) / 3.0f);
+            target = lo + (hi - lo) * std::max(k_rh, k_t);
+            if (k_t > k_rh)
+              state = "Automaticky, vysoká teplota";
+            else if (k_rh > 0.0f)
+              state = "Automaticky, odvlhčování";
+            else
+              state = "Automaticky, cirkulace";
+          }
+          target = clamp01(target);
+
+          const float step = ${ramp_step};
+          float duty = id(fan_duty);
+          if (target > duty + step)
+            duty += step;
+          else if (target < duty - step)
+            duty -= step;
+          else
+            duty = target;
+          id(fan_duty) = duty;
+
+          if (id(control_state).state != state)
+            id(control_state).publish_state(state);

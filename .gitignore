@@ -1,0 +1,11 @@
+# Secrets
+secrets.yaml
+zadani.md
+
+# ESPHome build artifacts
+.esphome/
+**/.esphome/
+.pioenvs/
+.piolibdeps/
+
+.DS_Store

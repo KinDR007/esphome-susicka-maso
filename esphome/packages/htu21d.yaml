@@ -1,0 +1,28 @@
+# HTU21D temperature and humidity sensor on I2C (address 0x40).
+# Requires substitutions: i2c_sda, i2c_scl
+# Provides ids: dryer_temperature, dryer_humidity
+# Both sensors publish NaN when no valid reading arrives for 60 s,
+# the control package switches to fallback duty in that case.
+
+i2c:
+  id: i2c_bus
+  sda: ${i2c_sda}
+  scl: ${i2c_scl}
+  frequency: 100kHz
+  scan: true
+
+sensor:
+  - platform: htu21d
+    i2c_id: i2c_bus
+    model: HTU21D
+    update_interval: 10s
+    temperature:
+      id: dryer_temperature
+      name: "Teplota"
+      filters:
+        - timeout: 60s
+    humidity:
+      id: dryer_humidity
+      name: "Vlhkost"
+      filters:
+        - timeout: 60s

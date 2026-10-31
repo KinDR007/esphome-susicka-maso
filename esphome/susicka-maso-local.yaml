@@ -1,0 +1,27 @@
+# Local development variant of susicka-maso.yaml: same config, packages from ./packages.
+
+substitutions:
+  device_name: susicka-maso
+  friendly_name: "Sušička na maso"
+  i2c_sda: GPIO5   # D4
+  i2c_scl: GPIO6   # D5
+  fan_pwm_inverted: "true"
+
+packages:
+  base: !include packages/base.yaml
+  htu21d: !include packages/htu21d.yaml
+  control: !include packages/control.yaml
+  fan1: !include
+    file: packages/fan.yaml
+    vars:
+      fan_id: fan1
+      fan_name: "Ventilátor 1"
+      pwm_pin: GPIO1   # D0
+      tach_pin: GPIO2  # D1
+  fan2: !include
+    file: packages/fan.yaml
+    vars:
+      fan_id: fan2
+      fan_name: "Ventilátor 2"
+      pwm_pin: GPIO7   # D8
+      tach_pin: GPIO8  # D9
