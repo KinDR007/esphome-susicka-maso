@@ -1,0 +1,375 @@
+# Long-term program timer, power outage detection and runtime statistics.
+# Requires: control.yaml (fan_duty, dryer_mode)
+#
+# Outage detection: every minute the current time is stored to last_seen, flash is
+# written every flash_write_interval. After boot and first time sync,
+# boot_time - last_seen = outage length. Resolution is flash_write_interval: a power loss is
+# reported up to flash_write_interval longer and runtime counters lose the same amount.
+# A clean restart (OTA, button) flushes on shutdown and is not counted as an outage
+# when shorter than outage_min_s.
+
+substitutions:
+  timezone: "Europe/Prague"
+  outage_min_s: "120"
+  flash_write_interval: 15min
+
+preferences:
+  flash_write_interval: ${flash_write_interval}
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: ${timezone}
+    on_time_sync:
+      then:
+        - lambda: |-
+            if (id(boot_checked))
+              return;
+            id(boot_checked) = true;
+            const uint32_t now = id(sntp_time).now().timestamp;
+            const uint32_t boot = now - millis() / 1000;
+            const uint32_t last = id(last_seen);
+            id(last_boot_ts).publish_state(boot);
+            if (last != 0 && boot > last + ${outage_min_s}) {
+              const uint32_t dur = boot - last;
+              id(outage_count) += 1;
+              id(outage_total_s) += dur;
+              auto &h = id(outage_log);
+              for (size_t i = h.size() - 1; i >= 2; i--)
+                h[i] = h[i - 2];
+              h[0] = last;
+              h[1] = dur;
+              if (id(prog_active)) {
+                id(prog_outage_s) += dur;
+                id(prog_outages) += 1;
+              }
+              ESP_LOGW("runtime", "Power outage detected, %u s", dur);
+            }
+            if (id(prog_active) && id(prog_start) == 0)
+              id(prog_start) = now - id(prog_run_s);
+            id(last_seen) = now;
+            id(publish_outages).execute();
+            id(runtime_update).execute();
+
+globals:
+  # Persistent state
+  - id: last_seen
+    type: uint32_t
+    restore_value: true
+    initial_value: "0"
+  - id: run_total_s
+    type: uint32_t
+    restore_value: true
+    initial_value: "0"
+  - id: fan_run_s
+    type: uint32_t
+    restore_value: true
+    initial_value: "0"
+  - id: outage_total_s
+    type: uint32_t
+    restore_value: true
+    initial_value: "0"
+  - id: outage_count
+    type: uint32_t
+    restore_value: true
+    initial_value: "0"
+  # Last 8 outages as pairs {start epoch, duration s}, newest first
+  - id: outage_log
+    type: std::array<uint32_t, 16>
+    restore_value: true
+  - id: prog_active
+    type: bool
+    restore_value: true
+    initial_value: "false"
+  - id: prog_done
+    type: bool
+    restore_value: true
+    initial_value: "false"
+  - id: prog_start
+    type: uint32_t
+    restore_value: true
+    initial_value: "0"
+  - id: prog_run_s
+    type: uint32_t
+    restore_value: true
+    initial_value: "0"
+  - id: prog_outage_s
+    type: uint32_t
+    restore_value: true
+    initial_value: "0"
+  - id: prog_outages
+    type: uint32_t
+    restore_value: true
+    initial_value: "0"
+  # Volatile
+  - id: boot_checked
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+number:
+  - platform: template
+    id: prog_duration_d
+    name: "Program délka"
+    icon: mdi:timer-cog-outline
+    unit_of_measurement: "d"
+    min_value: 0.5
+    max_value: 420
+    step: 0.5
+    initial_value: 14
+    optimistic: true
+    restore_value: true
+    mode: box
+
+select:
+  - platform: template
+    id: prog_count_mode
+    name: "Program odpočet"
+    icon: mdi:timer-sand
+    options:
+      - "Reálný čas"
+      - "Jen doba provozu"
+    initial_option: "Reálný čas"
+    optimistic: true
+    restore_value: true
+    entity_category: config
+  - platform: template
+    id: prog_end_action
+    name: "Program po dokončení"
+    icon: mdi:flag-checkered
+    options:
+      - "Pokračovat"
+      - "Vypnout ventilátory"
+    initial_option: "Pokračovat"
+    optimistic: true
+    restore_value: true
+    entity_category: config
+
+button:
+  - platform: template
+    name: "Program start"
+    icon: mdi:play
+    on_press:
+      - lambda: |-
+          auto t = id(sntp_time).now();
+          id(prog_start) = t.is_valid() ? t.timestamp : 0;
+          id(prog_run_s) = 0;
+          id(prog_outage_s) = 0;
+          id(prog_outages) = 0;
+          id(prog_done) = false;
+          id(prog_active) = true;
+          ESP_LOGI("runtime", "Program started, %.1f days", id(prog_duration_d).state);
+      - script.execute: runtime_update
+  - platform: template
+    name: "Program stop"
+    icon: mdi:stop
+    on_press:
+      - lambda: |-
+          id(prog_active) = false;
+          id(prog_done) = false;
+          ESP_LOGI("runtime", "Program stopped");
+      - script.execute: runtime_update
+  - platform: template
+    name: "Vynulovat statistiky"
+    icon: mdi:delete-restore
+    entity_category: config
+    on_press:
+      - lambda: |-
+          id(run_total_s) = 0;
+          id(fan_run_s) = 0;
+          id(outage_total_s) = 0;
+          id(outage_count) = 0;
+          id(outage_log).fill(0);
+      - script.execute: publish_outages
+      - script.execute: runtime_update
+
+binary_sensor:
+  - platform: template
+    name: "Program běží"
+    icon: mdi:timer-play-outline
+    lambda: return id(prog_active);
+  - platform: template
+    name: "Program dokončen"
+    icon: mdi:flag-checkered
+    lambda: return id(prog_done);
+
+sensor:
+  - platform: template
+    id: prog_elapsed_d
+    name: "Program uplynulo"
+    state_class: measurement
+    unit_of_measurement: "d"
+    accuracy_decimals: 2
+    update_interval: never
+  - platform: template
+    id: prog_remaining_d
+    name: "Program zbývá"
+    state_class: measurement
+    icon: mdi:timer-sand
+    unit_of_measurement: "d"
+    accuracy_decimals: 2
+    update_interval: never
+  - platform: template
+    id: prog_end_ts
+    name: "Program konec"
+    device_class: timestamp
+    update_interval: never
+  - platform: template
+    id: prog_run_h
+    name: "Program doba provozu"
+    state_class: measurement
+    unit_of_measurement: "h"
+    accuracy_decimals: 1
+    update_interval: never
+  - platform: template
+    id: prog_outage_h
+    name: "Program doba výpadků"
+    state_class: measurement
+    unit_of_measurement: "h"
+    accuracy_decimals: 1
+    update_interval: never
+  - platform: template
+    id: prog_outages_n
+    name: "Program počet výpadků"
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: never
+  - platform: template
+    id: run_total_h
+    name: "Celková doba provozu"
+    unit_of_measurement: "h"
+    accuracy_decimals: 1
+    state_class: total_increasing
+    update_interval: never
+  - platform: template
+    id: fan_run_h
+    name: "Doba běhu ventilátorů"
+    icon: mdi:fan-clock
+    unit_of_measurement: "h"
+    accuracy_decimals: 1
+    state_class: total_increasing
+    update_interval: never
+  - platform: template
+    id: outage_total_h
+    name: "Celková doba výpadků"
+    icon: mdi:power-plug-off
+    unit_of_measurement: "h"
+    accuracy_decimals: 2
+    state_class: total_increasing
+    update_interval: never
+  - platform: template
+    id: outage_count_n
+    name: "Počet výpadků"
+    icon: mdi:power-plug-off
+    accuracy_decimals: 0
+    state_class: total_increasing
+    update_interval: never
+  - platform: template
+    id: availability_pct
+    name: "Dostupnost"
+    icon: mdi:percent
+    unit_of_measurement: "%"
+    accuracy_decimals: 2
+    state_class: measurement
+    update_interval: never
+  - platform: template
+    id: last_outage_ts
+    name: "Poslední výpadek"
+    device_class: timestamp
+    update_interval: never
+  - platform: template
+    id: last_outage_min
+    name: "Poslední výpadek délka"
+    unit_of_measurement: "min"
+    accuracy_decimals: 0
+    update_interval: never
+  - platform: template
+    id: last_boot_ts
+    name: "Poslední start"
+    device_class: timestamp
+    entity_category: diagnostic
+    update_interval: never
+
+text_sensor:
+  - platform: template
+    id: outage_history
+    name: "Historie výpadků"
+    icon: mdi:history
+
+script:
+  - id: publish_outages
+    then:
+      - lambda: |-
+          const auto &h = id(outage_log);
+          std::string s;
+          for (size_t i = 0; i < h.size(); i += 2) {
+            if (h[i] == 0)
+              break;
+            char buf[40];
+            const uint32_t m = h[i + 1] / 60;
+            auto t = ESPTime::from_epoch_local(h[i]);
+            snprintf(buf, sizeof(buf), "%s%02d.%02d. %02d:%02d %uh%02um", s.empty() ? "" : "; ",
+                     t.day_of_month, t.month, t.hour, t.minute, m / 60, m % 60);
+            s += buf;
+          }
+          id(outage_history).publish_state(s.empty() ? "žádné" : s);
+          if (h[0] != 0) {
+            id(last_outage_ts).publish_state(h[0]);
+            id(last_outage_min).publish_state(h[1] / 60.0f);
+          }
+  - id: runtime_update
+    then:
+      - lambda: |-
+          auto t = id(sntp_time).now();
+          const bool valid = t.is_valid() && id(boot_checked);
+          const uint32_t dur = id(prog_duration_d).state * 86400.0f;
+
+          if (id(prog_active)) {
+            const bool real = id(prog_count_mode).active_index().value_or(0) == 0;
+            uint32_t elapsed = id(prog_run_s);
+            if (real && valid && id(prog_start) != 0 && (uint32_t) t.timestamp >= id(prog_start))
+              elapsed = t.timestamp - id(prog_start);
+            const uint32_t remaining = elapsed < dur ? dur - elapsed : 0;
+            id(prog_elapsed_d).publish_state(elapsed / 86400.0f);
+            id(prog_remaining_d).publish_state(remaining / 86400.0f);
+            if (valid)
+              id(prog_end_ts).publish_state(t.timestamp + remaining);
+            if (remaining == 0) {
+              id(prog_active) = false;
+              id(prog_done) = true;
+              ESP_LOGI("runtime", "Program finished");
+              if (id(prog_end_action).active_index().value_or(0) == 1)
+                id(dryer_mode).make_call().set_option("Vypnuto").perform();
+            }
+          } else {
+            id(prog_remaining_d).publish_state(0);
+          }
+          id(prog_run_h).publish_state(id(prog_run_s) / 3600.0f);
+          id(prog_outage_h).publish_state(id(prog_outage_s) / 3600.0f);
+          id(prog_outages_n).publish_state(id(prog_outages));
+
+          id(run_total_h).publish_state(id(run_total_s) / 3600.0f);
+          id(fan_run_h).publish_state(id(fan_run_s) / 3600.0f);
+          id(outage_total_h).publish_state(id(outage_total_s) / 3600.0f);
+          id(outage_count_n).publish_state(id(outage_count));
+          const float total = (float) id(run_total_s) + id(outage_total_s);
+          id(availability_pct).publish_state(total > 0 ? 100.0f * id(run_total_s) / total : 100.0f);
+
+interval:
+  - interval: 60s
+    then:
+      - lambda: |-
+          static uint32_t last_ms = 0;
+          const uint32_t dt = (millis() - last_ms) / 1000;
+          last_ms += dt * 1000;
+          id(run_total_s) += dt;
+          if (id(fan_duty) > 0.0f)
+            id(fan_run_s) += dt;
+          if (id(prog_active))
+            id(prog_run_s) += dt;
+          auto t = id(sntp_time).now();
+          if (t.is_valid() && id(boot_checked))
+            id(last_seen) = t.timestamp;
+          if (!id(outage_history).has_state())
+            id(publish_outages).execute();
+      - script.execute: runtime_update

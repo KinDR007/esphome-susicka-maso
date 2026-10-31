@@ -1,7 +1,8 @@
 # Sušička na maso (ESPHome)
 
 Řízení ventilace sušičky masa: Seeed XIAO ESP32S3, čidlo HTU21D, 1–2 ventilátory 12 V 4pin PWM
-s měřením otáček, automatický režim podle vlhkosti a teploty.
+s měřením otáček, automatický režim podle vlhkosti a teploty, dlouhodobý program sušení
+a evidence výpadků napájení.
 
 ## Struktura
 
@@ -17,7 +18,10 @@ esphome/
     base.yaml           deska, WiFi, API, OTA, web server, diagnostika
     htu21d.yaml         I2C + teplota/vlhkost
     control.yaml        režimy a automatická regulace
+    runtime.yaml        dlouhodobý program, výpadky, statistiky provozu
     fan.yaml            jeden PWM ventilátor + tachometr (vkládá se 1–2×)
+homeassistant/
+  dashboard.yaml        přehled pro analýzu (karty, grafy)
 scripts/
   esphome.sh            config / compile / run / logs
 ```
@@ -50,11 +54,13 @@ do `~/.cache/esphome-susicka-maso`.
 ## Dokumentace
 
 - [Zapojení](docs/zapojeni.md)
-- [Analýza a automatický režim](docs/analyza.md)
+- [Analýza, automatický režim, program a výpadky](docs/analyza.md)
 
 ## TODO
 
 - [x] Konfigurace ESPHome, validace a kompilace (ESPHome 2026.5)
 - [x] Balíčky na GitHubu, ověřeno stažení přes `config remote`
 - [ ] Ověřit na hardwaru: směr PWM (MOSFET), RPM proti údaji výrobce, fail-safe při resetu
+- [x] Dlouhodobý program, detekce výpadků, statistiky (zápis do flash 1× za 15 min)
+- [ ] Ověřit na hardwaru: detekce výpadku odpojením napájení, dokončení programu
 - [ ] Doladit výchozí parametry automatiky podle reálné komory

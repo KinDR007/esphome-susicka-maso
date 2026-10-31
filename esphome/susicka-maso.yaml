@@ -19,6 +19,7 @@ packages:
       - esphome/packages/base.yaml
       - esphome/packages/htu21d.yaml
       - esphome/packages/control.yaml
+      - esphome/packages/runtime.yaml
       - path: esphome/packages/fan.yaml
         vars:
           fan_id: fan1

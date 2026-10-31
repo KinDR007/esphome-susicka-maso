@@ -1,0 +1,85 @@
+# Home Assistant dashboard view for the meat dryer.
+# Dashboard > Edit > Raw configuration editor, paste under "views:".
+# Entity ids assume device friendly name "Sušička na maso"; adjust if HA named them differently.
+title: Sušička na maso
+path: susicka
+cards:
+  - type: entities
+    title: Program
+    entities:
+      - entity: number.susicka_na_maso_program_delka
+      - entity: button.susicka_na_maso_program_start
+      - entity: button.susicka_na_maso_program_stop
+      - entity: binary_sensor.susicka_na_maso_program_bezi
+      - entity: binary_sensor.susicka_na_maso_program_dokoncen
+      - entity: sensor.susicka_na_maso_program_uplynulo
+      - entity: sensor.susicka_na_maso_program_zbyva
+      - entity: sensor.susicka_na_maso_program_konec
+      - entity: sensor.susicka_na_maso_program_doba_provozu
+      - entity: sensor.susicka_na_maso_program_doba_vypadku
+      - entity: sensor.susicka_na_maso_program_pocet_vypadku
+      - entity: select.susicka_na_maso_program_odpocet
+      - entity: select.susicka_na_maso_program_po_dokonceni
+
+  - type: entities
+    title: Regulace
+    entities:
+      - entity: select.susicka_na_maso_rezim
+      - entity: sensor.susicka_na_maso_stav_regulace
+      - entity: number.susicka_na_maso_rucni_vykon
+      - entity: sensor.susicka_na_maso_teplota
+      - entity: sensor.susicka_na_maso_vlhkost
+      - entity: sensor.susicka_na_maso_vykon_ventilatoru
+      - entity: sensor.susicka_na_maso_ventilator_1_otacky
+      - entity: sensor.susicka_na_maso_ventilator_2_otacky
+
+  - type: entities
+    title: Provoz a výpadky
+    entities:
+      - entity: sensor.susicka_na_maso_celkova_doba_provozu
+      - entity: sensor.susicka_na_maso_doba_behu_ventilatoru
+      - entity: sensor.susicka_na_maso_celkova_doba_vypadku
+      - entity: sensor.susicka_na_maso_pocet_vypadku
+      - entity: sensor.susicka_na_maso_dostupnost
+      - entity: sensor.susicka_na_maso_posledni_vypadek
+      - entity: sensor.susicka_na_maso_posledni_vypadek_delka
+      - entity: sensor.susicka_na_maso_historie_vypadku
+      - entity: sensor.susicka_na_maso_posledni_start
+
+  - type: history-graph
+    title: Klima (7 dní)
+    hours_to_show: 168
+    entities:
+      - entity: sensor.susicka_na_maso_teplota
+      - entity: sensor.susicka_na_maso_vlhkost
+      - entity: sensor.susicka_na_maso_vykon_ventilatoru
+
+  - type: statistics-graph
+    title: Teplota a vlhkost (denní průměr)
+    period: day
+    days_to_show: 180
+    chart_type: line
+    stat_types: [mean, min, max]
+    entities:
+      - sensor.susicka_na_maso_teplota
+      - sensor.susicka_na_maso_vlhkost
+
+  - type: statistics-graph
+    title: Provoz a výpadky po dnech
+    period: day
+    days_to_show: 180
+    chart_type: bar
+    stat_types: [change]
+    entities:
+      - sensor.susicka_na_maso_celkova_doba_provozu
+      - sensor.susicka_na_maso_celkova_doba_vypadku
+      - sensor.susicka_na_maso_doba_behu_ventilatoru
+
+  - type: statistics-graph
+    title: Počet výpadků po týdnech
+    period: week
+    days_to_show: 420
+    chart_type: bar
+    stat_types: [change]
+    entities:
+      - sensor.susicka_na_maso_pocet_vypadku

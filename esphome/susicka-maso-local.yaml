@@ -11,6 +11,7 @@ packages:
   base: !include packages/base.yaml
   htu21d: !include packages/htu21d.yaml
   control: !include packages/control.yaml
+  runtime: !include packages/runtime.yaml
   fan1: !include
     file: packages/fan.yaml
     vars:
