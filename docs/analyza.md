@@ -143,6 +143,7 @@ Timestampy jsou v ESPHome typu float, přesnost je proto cca ±1 min.
 |------------------------------------------|-----------------------------------------------------|
 | Kondenzace na HTU21D při RH > 90 %       | čidlo v proudu vzduchu; při trvalé vysoké vlhkosti zvážit SHT41 s ohřevem |
 | Ventilátor se při 0 % nezastaví          | vlastnost ventilátoru, režim Vypnuto pak drží minimální otáčky; pro úplné vypnutí doplnit spínání +12 V (P-MOSFET) |
+| Čidlo selže při startu (ESPHome ho už nezkouší) | watchdog: bez platné vlhkosti 10 min → restart; interval se po každém neúspěšném restartu zdvojnásobí (max 6 h), po první platné hodnotě se vynuluje |
 | Výpadek ESP                              | MOSFET + pull-down: ventilátory na 100 %            |
 | Rušení tachometru od PWM                 | PCNT filtr 13 µs, volitelně RC 10 k / 1 nF          |
 | Vlhkost na elektronice                   | XIAO a step-down mimo komoru                        |

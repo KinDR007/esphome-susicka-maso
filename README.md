@@ -72,6 +72,8 @@ do `~/.cache/esphome-susicka-maso`.
 - [x] Dlouhodobý program, detekce výpadků, statistiky (zápis do flash 1× za 15 min)
 - [x] Fázové profily sušení s alarmy mezí
 - [x] Parametrická vrtací šablona a mřížka ventilátoru (OpenSCAD)
+- [x] Watchdog čidla (restart při chybějících datech, zdvojování intervalu)
+- [ ] Ověřit na hardwaru: watchdog čidla (test build `-s sensor_reboot_timeout 60`)
 - [ ] Ověřit na hardwaru: detekce výpadku odpojením napájení, dokončení programu
 - [ ] Doladit výchozí parametry automatiky a profilů podle reálné komory
 - [ ] Volitelně: tenzometr HX711 (konec podle úbytku hmotnosti), SHT41 místo HTU21D

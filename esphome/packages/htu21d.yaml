@@ -26,3 +26,43 @@ sensor:
       name: "Vlhkost"
       filters:
         - timeout: 60s
+
+# Watchdog: a sensor that fails during setup is never retried by ESPHome.
+# Without a valid humidity reading for sensor_reboot_timeout the device reboots.
+# The timeout doubles after each unsuccessful reboot (max 6 h) to avoid a reboot
+# loop when the sensor is missing; it resets with the first valid reading.
+substitutions:
+  sensor_reboot_timeout: "600"
+
+globals:
+  - id: sensor_reboots
+    type: uint8_t
+    restore_value: true
+    initial_value: "0"
+
+script:
+  - id: sensor_reboot
+    mode: single
+    then:
+      - lambda: |-
+          id(sensor_reboots) += 1;
+          ESP_LOGE("htu21d", "No valid reading, rebooting (attempt %u)", id(sensor_reboots));
+      # let the restored global reach flash before reboot
+      - delay: 2s
+      - lambda: App.safe_reboot();
+
+interval:
+  - interval: 60s
+    then:
+      - lambda: |-
+          static uint32_t last_ok = 0;
+          if (!std::isnan(id(dryer_humidity).state)) {
+            last_ok = millis();
+            if (id(sensor_reboots) != 0)
+              id(sensor_reboots) = 0;
+            return;
+          }
+          const uint32_t shift = std::min<uint32_t>(id(sensor_reboots), 6);
+          const uint32_t timeout_s = std::min<uint32_t>(${sensor_reboot_timeout}u << shift, 21600u);
+          if (millis() - last_ok >= timeout_s * 1000u && !id(sensor_reboot).is_running())
+            id(sensor_reboot).execute();
