@@ -22,10 +22,14 @@ esphome/
     runtime.yaml        dlouhodobý program, výpadky, statistiky provozu
     profiles.yaml       fázové profily sušení (biltong, bresaola, salám, ...)
     fan.yaml            jeden PWM ventilátor + tachometr (vkládá se 1–2×)
+hw/
+  fan_grille.scad       parametrická vrtací šablona a krycí mřížka ventilátoru
+  README.md             parametry, postup vrtání, export STL
 homeassistant/
   dashboard.yaml        přehled pro analýzu (karty, grafy)
 scripts/
   esphome.sh            config / compile / run / logs
+  scad.sh               export STL šablony a mřížky do hw/stl/
 ```
 
 ## Použití v ESPHome (Home Assistant add-on / dashboard)
@@ -58,6 +62,7 @@ do `~/.cache/esphome-susicka-maso`.
 - [Zapojení](docs/zapojeni.md)
 - [Analýza, automatický režim, program a výpadky](docs/analyza.md)
 - [Profily sušení](docs/profily.md)
+- [Šablona a mřížka ventilátoru](hw/README.md)
 
 ## TODO
 
@@ -66,6 +71,7 @@ do `~/.cache/esphome-susicka-maso`.
 - [ ] Ověřit na hardwaru: směr PWM (MOSFET), RPM proti údaji výrobce, fail-safe při resetu
 - [x] Dlouhodobý program, detekce výpadků, statistiky (zápis do flash 1× za 15 min)
 - [x] Fázové profily sušení s alarmy mezí
+- [x] Parametrická vrtací šablona a mřížka ventilátoru (OpenSCAD)
 - [ ] Ověřit na hardwaru: detekce výpadku odpojením napájení, dokončení programu
 - [ ] Doladit výchozí parametry automatiky a profilů podle reálné komory
 - [ ] Volitelně: tenzometr HX711 (konec podle úbytku hmotnosti), SHT41 místo HTU21D
