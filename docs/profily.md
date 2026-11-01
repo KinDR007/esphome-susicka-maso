@@ -29,9 +29,17 @@ ne ověřené limity bezpečnosti potravin. Solení / nakládání probíhá př
 | 4 | **Fermentovaný salám (sušení)** | 12–15 °C | 90–95 % (fermentace) → 85 → 70–75 % | 0,8 m/s na začátku, pak 0,5 m/s | 3–8 týdnů | úbytek 30–40 % | **jen fáze sušení**, fermentace potřebuje zvlhčování/teplo |
 | 5 | **Bündnerfleisch** | 9–18 °C | 70–80 % | řízená cirkulace | 10–24 týdnů | úbytek 45–55 % | dobrá ve sklepě, dlouhý program; lisování je ruční krok |
 | 6 | **Pastırma** | 15 °C → 20 °C | 80 % → 70 % | mírné | ~25–30 dní | – | dobrá; fáze oddělené ručním lisováním a nanesením çemenu |
+| 7 | **Lonza / lomo** (vepřová pečeně) | 15 → 12 °C, lonzino 13–14 °C | 85 → 75 %, lonzino 78–82 % | mírné | 1–2 měsíce | úbytek 30–35 % | **velmi dobrá** ve sklepě, libové maso schne rovnoměrně |
+| 8 | **Coppa** (krkovice) | 12–15 °C | 70–80 %, zrání 80–82 % proti zatvrdnutí | dobré | 4–12 týdnů | úbytek 30–35 % | dobrá ve sklepě; tlustý kus, hlídat zatvrdnutí |
+| 9 | **Pancetta / guanciale** (bůček, lalok) | 10–15 °C | 60–75 % | dobré | 3–6 týdnů | úbytek 25–30 % | dobrá; pod 60 % RH hrozí zatvrdnutí |
+| 10 | **Speck** (kýta) | 10–15 °C, uzení ≤ 20 °C | 60–80 % | střídání kouře a větrání | IGP min. 22 týdnů | – | dobrá ve sklepě; studené uzení je ruční krok mimo sušičku |
 
 Detail fází pastırmy (studie): 6 dní 15 °C / 80 % → lisování → 5 dní 20 °C / 70 % →
 lisování → 5 dní → çemen (1 den, 7 °C, mimo sušičku) → 10 dní 20 °C / 70 %.
+
+Vepřové maso v celku: maso jen s veterinární kontrolou na trichinely (v EU se jatečná prasata
+vyšetřují); z domácí porážky nechat vyšetřit, nebo zmrazit (kusy do 15 cm 20 dní při −15 °C,
+silnější 30 dní). Nasolení nakládací solí s dusitanem probíhá před sušením v lednici.
 
 Společné poznatky:
 
@@ -95,6 +103,10 @@ odpovídají doporučení snižovat proudění v pozdějších fázích.
 | Fermentovaný salám (sušení) | Osychání 7 d, 85 %, 30–80 % → Sušení 14 d, 80 %, 20–60 % → Dosoušení 14 d, 75 %, 15–50 %; Tmax 15 °C | 10–16 / 78–95 → 70–88 → 65–82 | 35 d |
 | Bündnerfleisch | 21 d 80 % → *lisování* → 28 d 77 % → *lisování* → 28 d 75 % → *lisování* → 21 d 72 %; výkon 20–60 → 15–50 %, Tmax 14 °C | 8–18 / 62–88 | 98 d |
 | Pastırma | 6 d 80 %, 16 °C → *lisování* → 5 d 70 %, 21 °C → *lisování* → 5 d → *çemen* → 10 d 70 % | 12–18 / 70–88 → 16–23 / 60–80 | 26 d |
+| Lonza / lomo | Náběh 7 d, 82 %, 15–60 % → Sušení 42 d, 77 %, 15–50 %; Tmax 15 °C | 10–17 / 75–90 → 10–16 / 70–85 | 49 d |
+| Coppa | Náběh 7 d, 82 % → Sušení 42 d, 78 % → Dosoušení 21 d, 75 %, 15–45 %; Tmax 15 °C | 10–17 / 75–90 → 10–16 / 70–86 → 68–82 | 70 d |
+| Pancetta / guanciale | Náběh 3 d, 78 %, 20–60 % → Sušení 32 d, 72 %, 15–50 %; Tmax 15 °C | 10–16 / 68–88 → 60–80 | 35 d |
+| Speck | Osychání 7 d, 80 %, 20–60 % → *studené uzení* → Zrání 91 d, 75 %, 15–50 %; Tmax 15 °C | 10–16 / 70–88 → 65–85 | 98 d |
 
 Úprava profilu: tabulka ve skriptu `profile_update` v `profiles.yaml` (řádek = fáze),
 nová volba se přidá do `options` selectu a do pole `profiles[]` ve stejném pořadí.
@@ -122,3 +134,17 @@ Stejnou tabulku a texty průvodce obsahuje `profiles` v
 - Pastırma: [meatsandsausages.com](https://meatsandsausages.com/hams-other-meats/pastirma),
   [UK product specification Pastarma Govezhda](https://assets.publishing.service.gov.uk/media/665da56bdc15efdddf1a8650/Product_specification_Pastarma_Govezhda.pdf),
   [PMC5112424](https://pmc.ncbi.nlm.nih.gov/articles/PMC5112424)
+- Lonza / lomo: [meatsandsausages.com, lomo embuchado](https://meatsandsausages.com/sausage-recipes/fermented/lomo-embuchado),
+  [lomo Huelva](https://meatsandsausages.com/sausage-recipes/fermented/lomo-embuchado-huelva),
+  [Taste of Artisan, lonzino](https://tasteofartisan.com/lonzino/),
+  [Hank Shaw, lonzino](https://honest-food.net/gird-your-loins-lonzino/comment-page-2/)
+- Coppa: [Taste of Artisan, capicola](https://tasteofartisan.com/capicola-recipe/),
+  [TVWBB, coppa](https://tvwbb.com/threads/coppa.84511/),
+  [The Hungry Dog Blog](https://thehungrydogblog.com/2014/04/curing-coppa-recipe/)
+- Pancetta / guanciale: [Taste of Artisan, guanciale](https://tasteofartisan.com/guanciale/),
+  [Hank Shaw, guanciale](https://honest-food.net/how-to-make-guanicale),
+  [TVWBB, guanciale](https://tvwbb.com/threads/guanciale-temp-and-humidity-levels.29962/post-94964)
+- Speck: [Speck Alto Adige IGP, technical sheet](https://www.speck.it/CustomerData/496/Files/Documents/news-aktuelles/download/technicalsheet_speckaltoadigepgi.pdf),
+  [Wikipedia, Tyrolean speck](https://en.wikipedia.org/wiki/Tyrolean_speck)
+- Trichinely: [BfR](https://www.bfr.bund.de/de/publication/increased_incidence_of_trichinosis_cases_in_germany-1190.html),
+  [WFLO Commodity Storage Manual](https://www.gcca.org/system/files/WFLO-Commodity-Storage-Manual-2018-Trichinella%20Larvae%20Destruction.pdf)

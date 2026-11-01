@@ -362,6 +362,51 @@ views:
                         - [120, 70, 10, 25, 80, 21, 16, 23, 60, 80, Sušení 20 °C, Lisování]
                         - [120, 70, 10, 25, 80, 21, 16, 23, 60, 80, Sušení 20 °C, Nanést çemen (1 den v lednici)]
                         - [240, 70, 10, 25, 80, 21, 16, 23, 60, 80, Dosoušení, null]
+                    - name: Lonza / lomo (vepřová pečeně)
+                      level: začátečník
+                      about: Italská lonza nebo španělské lomo, sušená vepřová pečeně v celku. Libové maso schne rovnoměrně, nejsnazší vepřový profil.
+                      meat: vepřová pečeně (karé bez kosti) v celku, bez blan, tuk na povrchu může zůstat; maso z jatek s veterinární kontrolou
+                      room: sklep nebo chladná místnost 10–16 °C, vlhkost vzduchu 70–85 %
+                      prep: osolit nakládací solí (s dusitanem) a kořením, vakuovat a nechat v lednici prosolit podle tloušťky (obvykle 1–3 týdny), opláchnout, osušit, navléct do síťky nebo střeva, zvážit
+                      done: úbytek hmotnosti 30–35 %, pevné v celém průřezu; vážit na začátku a každý týden
+                      tip: Prvních 7 dní vyšší cílová vlhkost, aby povrch nezatvrdl. Bílá plíseň je v pořádku, zelenou otřít octem.
+                      stages:
+                        - [168, 82, 6, 15, 60, 15, 10, 17, 75, 90, Náběh, null]
+                        - [1008, 77, 6, 15, 50, 15, 10, 16, 70, 85, Sušení, null]
+                    - name: Coppa (krkovice)
+                      level: středně pokročilý
+                      about: Italská coppa (capocollo), sušená vepřová krkovice v celku. Prorostlá tukem, schne pomaleji než pečeně a je šťavnatější.
+                      meat: vepřová krkovice v celku bez kosti; maso z jatek s veterinární kontrolou
+                      room: sklep nebo chladná místnost 10–16 °C, vlhkost vzduchu 70–85 %
+                      prep: osolit nakládací solí a kořením, vakuovat a nechat v lednici prosolit podle tloušťky (obvykle 2–3 týdny), opláchnout, pevně navléct do střeva nebo stáhnout síťkou, zvážit
+                      done: úbytek hmotnosti 30–35 %, na řezu jednolitá barva bez tmavého okraje; obvykle 8–12 týdnů podle tloušťky
+                      tip: Tlustý kus schne nerovnoměrně, proto vysoká vlhkost na začátku a nižší proudění na konci. Pokud kus ještě není hotový, program prodluž.
+                      stages:
+                        - [168, 82, 6, 15, 60, 15, 10, 17, 75, 90, Náběh, null]
+                        - [1008, 78, 6, 15, 50, 15, 10, 16, 70, 86, Sušení, null]
+                        - [504, 75, 6, 15, 45, 15, 10, 16, 68, 82, Dosoušení, null]
+                    - name: Pancetta / guanciale
+                      level: začátečník
+                      about: Sušený vepřový bůček (pancetta) nebo lalok (guanciale). Hodně tuku, vaří se z něj (carbonara, amatriciana), krájí se i syrový.
+                      meat: vepřový bůček bez kůže a kostí, nebo vepřový lalok; maso z jatek s veterinární kontrolou
+                      room: chladná místnost nebo sklep 10–16 °C, vlhkost vzduchu 60–80 %
+                      prep: osolit nakládací solí, pepřem a kořením, v sáčku 1–2 týdny v lednici (obracet), opláchnout, osušit, pancettu svinout a převázat nebo nechat plochou, zavěsit
+                      done: úbytek hmotnosti 25–30 %, libové části pevné; tuk ztrácí vodu pomalu, proto nižší cíl než u libového masa
+                      tip: Pod 60 % vlhkosti hrozí zatvrdnutí povrchu. Plochý bůček je hotový dřív než svinutý.
+                      stages:
+                        - [72, 78, 8, 20, 60, 15, 10, 16, 68, 88, Náběh, null]
+                        - [768, 72, 8, 15, 50, 15, 10, 16, 60, 80, Sušení, null]
+                    - name: Speck (kýta)
+                      level: pokročilý
+                      about: Tyrolský speck, vepřová kýta nasolená, studeně uzená a dlouho zrající. Uzení probíhá mimo sušičku, dashboard ho vyžádá po osychání.
+                      meat: vepřová kýta bez kosti, ořech nebo šál v celku, s kůží nebo tukem na jedné straně; maso z jatek s veterinární kontrolou
+                      room: chladný sklep 10–16 °C, vlhkost vzduchu 65–85 %, stabilní po celé 3 měsíce
+                      prep: nasolit nakládací solí, pepřem, jalovcem, česnekem a bobkovým listem, 2–3 týdny v chladu v sáčku (obracet), opláchnout, zavěsit do sušičky
+                      done: úbytek hmotnosti 30–35 %; originální Speck Alto Adige IGP zraje nejméně 22 týdnů, menší kusy doma dříve
+                      tip: Po 7 dnech osychání vyžádá zásah studené uzení. Udit kouřem do 20 °C, několik dní střídavě s větráním, pak vrátit do sušičky a stisknout Zásah proveden.
+                      stages:
+                        - [168, 80, 8, 20, 60, 15, 10, 16, 70, 88, Osychání, Studené uzení (max. 20 °C)]
+                        - [2184, 75, 8, 15, 50, 15, 10, 16, 65, 85, Zrání, null]
                 show_icon: false
                 show_name: false
                 show_state: false
@@ -564,7 +609,7 @@ views:
                       return h+`</div></details>`;
                     };
                     return variables.profiles.map(one).join('')
-                      +"<p class='note'>Hodnoty jsou orientační z receptů a studií, ne ověřené limity bezpečnosti potravin. Hotovost rozhoduje úbytek hmotnosti, ne uplynulá doba.</p>"; ]]]
+                      +"<p class='note'>Hodnoty jsou orientační z receptů a studií, ne ověřené limity bezpečnosti potravin. Hotovost rozhoduje úbytek hmotnosti, ne uplynulá doba. Vepřové sušit jen s veterinární kontrolou na trichinely (maso z jatek); z domácí porážky nechat vyšetřit, nebo kusy do 15 cm zmrazit na 20 dní při −15 °C.</p>"; ]]]
                 extra_styles: >-
                   details{border-top:1px solid var(--divider-color);pointer-events:auto}
                   summary{display:flex;align-items:center;gap:8px;padding:9px 0;cursor:pointer;list-style:none;pointer-events:auto}
