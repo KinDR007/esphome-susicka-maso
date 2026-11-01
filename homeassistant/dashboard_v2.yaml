@@ -375,13 +375,14 @@ views:
                     - border: none
                   grid:
                     - grid-template-areas: '"tl"'
-                    - grid-template-columns: 1fr
+                    - grid-template-columns: minmax(0, 1fr)
                   custom_fields:
                     tl:
                       - justify-self: stretch
-                      - width: 100%
+                      - min-width: 0
                       - font-size: 12px
                       - text-align: left
+                      - white-space: normal
                 custom_fields:
                   tl: |-
                     [[[ const st=(id)=>states[id]?states[id].state:'unavailable';
@@ -501,6 +502,7 @@ views:
                       - font-size: 16px
                       - line-height: "1.4"
                       - text-align: left
+                      - white-space: normal
               # One collapsible item per profile, the selected one is open.
               # Only the profile select and program state are read, so the open/closed
               # state is not reset by sensor updates.
@@ -521,13 +523,15 @@ views:
                     - cursor: default
                   grid:
                     - grid-template-areas: '"guide"'
-                    - grid-template-columns: 1fr
+                    - grid-template-columns: minmax(0, 1fr)
                   custom_fields:
                     guide:
                       - justify-self: stretch
-                      - width: 100%
+                      - min-width: 0
                       - font-size: 13px
                       - text-align: left
+                      - white-space: normal
+                      - overflow-wrap: anywhere
                 custom_fields:
                   guide: |-
                     [[[ globalThis.dashTap=(ev,el)=>{ev.stopPropagation();const a=JSON.parse(el.dataset.tap);el.dispatchEvent(new CustomEvent('hass-action',{bubbles:true,composed:true,detail:{config:{entity:a.entity,tap_action:a},action:'tap'}}))};
@@ -567,18 +571,20 @@ views:
                   summary::-webkit-details-marker{display:none}
                   summary::before{content:'›';width:10px;color:var(--secondary-text-color);transition:transform .15s}
                   details[open] summary::before{transform:rotate(90deg)}
-                  summary .t{font-size:14px}
-                  summary .m{margin-left:auto;color:var(--secondary-text-color);white-space:nowrap}
+                  summary .t{font-size:14px;min-width:0}
+                  summary .m{margin-left:auto;padding-left:8px;color:var(--secondary-text-color);white-space:nowrap}
                   summary .on{font-size:11px;padding:1px 6px;border-radius:8px;background:var(--primary-color);color:var(--text-primary-color)}
                   .b{padding:0 0 10px 18px;line-height:1.45}
                   .b p{margin:0 0 6px}
                   .kv{display:flex;gap:10px;padding:3px 0}
                   .kv .l{flex:0 0 72px;color:var(--secondary-text-color)}
+                  .kv span:last-child{flex:1;min-width:0}
                   .tl{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden;margin:8px 0 4px}
                   .tl .a{flex:0 0 3px;background:var(--warning-color)}
                   table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:12px}
                   th{font-weight:400;color:var(--secondary-text-color);text-align:left;padding:3px 4px 3px 0}
-                  td{padding:3px 4px 3px 0;border-top:1px solid var(--divider-color);white-space:nowrap}
+                  td{padding:3px 4px 3px 0;border-top:1px solid var(--divider-color)}
+                  td+td{white-space:nowrap}
                   td i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
                   tr.act td{color:var(--warning-color);border-top:none;padding-top:0}
                   .tip{color:var(--secondary-text-color);font-style:italic}
