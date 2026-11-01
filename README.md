@@ -27,8 +27,10 @@ hw/
   htu21d_case.scad      kryt čidla HTU21D s magnety, vodiče skrz stěnu
   README.md             parametry, postup vrtání, export STL
 homeassistant/
-  dashboard.yaml        přehled pro analýzu (karty, grafy)
+  dashboard.yaml        jednoduchý pohled (nativní karty)
+  dashboard_v2.yaml     dashboard ve stylu Přehledu, průvodce profily (custom karty)
 scripts/
+  check_dashboard.py    kontrola dashboardů: entity, tabulky profilů, JS šablony
   esphome.sh            config / compile / run / logs
   scad.sh               export STL (šablona, mřížka, kryt čidla) do hw/stl/
 ```
@@ -58,6 +60,30 @@ do `~/.cache/esphome-susicka-maso`.
 
 `esphome/secrets.yaml` a `zadani.md` jsou v `.gitignore` a nesmí se commitovat.
 
+## Dashboard Home Assistant
+
+[homeassistant/dashboard_v2.yaml](homeassistant/dashboard_v2.yaml) má stejný vzhled jako
+redesignovaný Přehled: bloky s velkou hodnotou, grafem a řádky detailů.
+
+- Sekce: komora, ventilátory, program s časovou osou fází, průvodce profily, graf za 7 dní,
+  nastavení regulace, provoz a výpadky, dlouhodobé statistiky.
+- Průvodce profily: u každého profilu popis, vhodné maso, prostředí, příprava, fáze
+  (délka, cílová RH, výkon, teplota), ruční zásahy a kdy je hotovo.
+  Nahoře je výpis profilů, které odpovídají aktuální teplotě v komoře.
+  Tlačítko „Zvolit profil“ si vyžádá potvrzení.
+- Custom karty (HACS): button-card, stack-in-card, mini-graph-card, apexcharts-card,
+  mushroom, card-mod.
+- Instalace jako samostatný dashboard: Nastavení → Dashboardy → Přidat → Upravit →
+  Editor kódu → vložit celý soubor.
+  Do dashboardu, který už má šablony `vrm_head`/`vrm_details`, stačí vložit položku z `views:`.
+
+Tabulky fází v dashboardu musí odpovídat [profiles.yaml](esphome/packages/profiles.yaml).
+Kontrola po každé změně profilů nebo dashboardu:
+
+```sh
+scripts/check_dashboard.py   # potřebuje PyYAML a node (PyYAML má i python ESPHome)
+```
+
 ## Dokumentace
 
 - [Zapojení](docs/zapojeni.md)
@@ -79,4 +105,6 @@ do `~/.cache/esphome-susicka-maso`.
 - [ ] Ověřit na hardwaru: watchdog čidla (test build `-s sensor_reboot_timeout 60`)
 - [ ] Ověřit na hardwaru: detekce výpadku odpojením napájení, dokončení programu
 - [ ] Doladit výchozí parametry automatiky a profilů podle reálné komory
+- [x] Dashboard v2 ve stylu Přehledu s průvodcem profily
+- [ ] Nasadit dashboard v2 v HA a ověřit vzhled po přidání zařízení
 - [ ] Volitelně: tenzometr HX711 (konec podle úbytku hmotnosti), SHT41 místo HTU21D

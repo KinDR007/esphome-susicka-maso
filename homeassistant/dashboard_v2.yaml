@@ -1,0 +1,799 @@
+# Home Assistant dashboard v2 for the meat dryer, styled like the redesigned "Přehled"
+# (sections view, one block per topic: title + big value + sparkline + detail rows).
+#
+# Custom cards (HACS): button-card, stack-in-card, mini-graph-card, apexcharts-card,
+# mushroom, card-mod.
+#
+# Install as a separate dashboard: Settings > Dashboards > Add dashboard > open it >
+# Edit > Raw configuration editor > paste this whole file.
+# Into an existing dashboard that already has the vrm_head / vrm_details templates
+# (Přehled): paste only the item under "views:".
+#
+# Entity ids assume device friendly name "Sušička na maso".
+# Profile stages in "profiles" must match esphome/packages/profiles.yaml,
+# scripts/check_dashboard.py verifies it.
+
+title: Sušička na maso
+
+button_card_templates:
+  vrm_head:
+    show_icon: false
+    show_name: false
+    show_state: false
+    tap_action:
+      action: more-info
+    styles:
+      card:
+        - padding: 14px 16px 4px
+        - box-shadow: none
+        - background: none
+        - border: none
+      grid:
+        - grid-template-areas: '"title extra" "value value"'
+        - grid-template-columns: 1fr auto
+        - row-gap: 2px
+      custom_fields:
+        title:
+          - justify-self: start
+          - font-size: 14px
+          - color: var(--secondary-text-color)
+          - display: flex
+          - align-items: center
+          - gap: 6px
+        extra:
+          - justify-self: end
+          - font-size: 13px
+          - color: var(--secondary-text-color)
+        value:
+          - justify-self: start
+          - font-size: 32px
+          - font-weight: "400"
+          - line-height: "1.25"
+    extra_styles: ".u{font-size:20px;color:var(--secondary-text-color);margin-left:4px}"
+  vrm_details:
+    show_icon: false
+    show_name: false
+    show_state: false
+    tap_action:
+      action: none
+    styles:
+      card:
+        - padding: 0 16px 10px
+        - box-shadow: none
+        - background: none
+        - border: none
+      grid:
+        - grid-template-areas: '"rows"'
+        - grid-template-columns: 1fr
+      custom_fields:
+        rows:
+          - justify-self: stretch
+          - width: 100%
+          - font-size: 13px
+    extra_styles: >-
+      .r{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--divider-color)}
+      .r .l{color:var(--secondary-text-color)}
+      .i{display:flex;gap:18px;padding:7px 0;border-top:1px solid var(--divider-color)}
+      .i .l{color:var(--secondary-text-color);min-width:64px}
+      [data-tap]{cursor:pointer;pointer-events:auto}[data-tap]:hover,.r[data-tap]:hover .l{color:var(--primary-color)}
+
+views:
+  - title: Sušička
+    path: susicka
+    icon: mdi:food-steak
+    type: sections
+    max_columns: 3
+    sections:
+      # ---------------------------------------------------------------- Komora
+      - type: grid
+        cards:
+          - type: heading
+            heading: Komora
+            heading_style: title
+            icon: mdi:food-steak
+
+          - type: custom:stack-in-card
+            grid_options:
+              columns: full
+            cards:
+              - type: custom:button-card
+                template: vrm_head
+                entity: sensor.susicka_na_maso_teplota
+                custom_fields:
+                  title: "<ha-icon icon='mdi:thermometer' style='--mdc-icon-size:18px'></ha-icon>Teplota"
+                  extra: |-
+                    [[[ const s=states['binary_sensor.susicka_na_maso_teplota_mimo_profil'];
+                    return s&&s.state==='on'?"<span style='color:var(--error-color)'>mimo profil</span>":''; ]]]
+                  value: |-
+                    [[[ const x=parseFloat(states['sensor.susicka_na_maso_teplota']?.state);
+                    return (isNaN(x)?'–':x.toFixed(1))+"<span class='u'>°C</span>"; ]]]
+              - type: custom:mini-graph-card
+                hours_to_show: 24
+                points_per_hour: 6
+                line_width: 2
+                height: 56
+                animate: false
+                group: true
+                entities:
+                  - entity: sensor.susicka_na_maso_teplota
+                    color: "#e5604d"
+                show: {name: false, icon: false, state: false, legend: false, labels: false, fill: fade, points: false}
+                card_mod:
+                  style: "ha-card{background:none;border:none;box-shadow:none}"
+              - type: custom:button-card
+                template: vrm_details
+                custom_fields:
+                  rows: |-
+                    [[[ const n=(id,d=0)=>{const x=parseFloat(states[id]?.state);return isNaN(x)?'–':x.toFixed(d)};
+                    return `<div class='r'><span class='l'>Max. teplota pro zvýšení proudění</span><span>${n('number.susicka_na_maso_maximalni_teplota')} °C</span></div>`; ]]]
+
+          - type: custom:stack-in-card
+            grid_options:
+              columns: full
+            cards:
+              - type: custom:button-card
+                template: vrm_head
+                entity: sensor.susicka_na_maso_vlhkost
+                custom_fields:
+                  title: "<ha-icon icon='mdi:water-percent' style='--mdc-icon-size:18px'></ha-icon>Vlhkost"
+                  extra: |-
+                    [[[ const s=states['binary_sensor.susicka_na_maso_vlhkost_mimo_profil'];
+                    const x=parseFloat(states['number.susicka_na_maso_cilova_vlhkost']?.state);
+                    return (s&&s.state==='on'?"<span style='color:var(--error-color)'>mimo profil</span> · ":'')+'cíl '+(isNaN(x)?'–':x.toFixed(0))+' %'; ]]]
+                  value: |-
+                    [[[ const x=parseFloat(states['sensor.susicka_na_maso_vlhkost']?.state);
+                    return (isNaN(x)?'–':x.toFixed(0))+"<span class='u'>%</span>"; ]]]
+              - type: custom:mini-graph-card
+                hours_to_show: 24
+                points_per_hour: 6
+                line_width: 2
+                height: 56
+                animate: false
+                group: true
+                entities:
+                  - entity: sensor.susicka_na_maso_vlhkost
+                    color: "#3b82f6"
+                show: {name: false, icon: false, state: false, legend: false, labels: false, fill: fade, points: false}
+                card_mod:
+                  style: "ha-card{background:none;border:none;box-shadow:none}"
+              - type: custom:button-card
+                template: vrm_details
+                custom_fields:
+                  rows: |-
+                    [[[ const n=(id,d=0)=>{const x=parseFloat(states[id]?.state);return isNaN(x)?'–':x.toFixed(d)};
+                    return `<div class='r'><span class='l'>Pásmo regulace</span><span>± ${n('number.susicka_na_maso_pasmo_regulace_vlhkosti')} %</span></div>`; ]]]
+
+          - type: custom:stack-in-card
+            grid_options:
+              columns: full
+            cards:
+              - type: custom:button-card
+                template: vrm_head
+                entity: sensor.susicka_na_maso_vykon_ventilatoru
+                custom_fields:
+                  title: "<ha-icon icon='mdi:fan' style='--mdc-icon-size:18px'></ha-icon>Ventilátory"
+                  extra: "[[[ return states['sensor.susicka_na_maso_stav_regulace']?.state ?? '–'; ]]]"
+                  value: |-
+                    [[[ const x=parseFloat(states['sensor.susicka_na_maso_vykon_ventilatoru']?.state);
+                    return (isNaN(x)?'–':x.toFixed(0))+"<span class='u'>%</span>"; ]]]
+              - type: custom:mini-graph-card
+                hours_to_show: 24
+                points_per_hour: 6
+                line_width: 2
+                height: 56
+                animate: false
+                group: true
+                entities:
+                  - entity: sensor.susicka_na_maso_vykon_ventilatoru
+                    color: "#22a06b"
+                show: {name: false, icon: false, state: false, legend: false, labels: false, fill: fade, points: false}
+                card_mod:
+                  style: "ha-card{background:none;border:none;box-shadow:none}"
+              - type: custom:button-card
+                template: vrm_details
+                custom_fields:
+                  rows: |-
+                    [[[ globalThis.dashTap=(ev,el)=>{ev.stopPropagation();const a=JSON.parse(el.dataset.tap);el.dispatchEvent(new CustomEvent('hass-action',{bubbles:true,composed:true,detail:{config:{entity:a.entity,tap_action:a},action:'tap'}}))};
+                    const fan=(label,rpm,fault)=>{const r=parseFloat(states[rpm]?.state);
+                      const v=states[fault]?.state==='on'?"<span style='color:var(--error-color)'>Porucha</span> · ":'';
+                      return `<div class='r' data-tap='{"action":"more-info","entity":"${rpm}"}' onclick='dashTap(event,this)'><span class='l'>${label}</span><span>${v}${isNaN(r)?'–':r.toFixed(0)+' ot/min'}</span></div>`};
+                    const m=parseFloat(states['number.susicka_na_maso_minimalni_vykon']?.state), M=parseFloat(states['number.susicka_na_maso_maximalni_vykon']?.state);
+                    return fan('Ventilátor 1','sensor.susicka_na_maso_ventilator_1_otacky','binary_sensor.susicka_na_maso_ventilator_1_porucha')
+                      +fan('Ventilátor 2','sensor.susicka_na_maso_ventilator_2_otacky','binary_sensor.susicka_na_maso_ventilator_2_porucha')+`<div class='r'><span class='l'>Rozsah výkonu</span><span>${isNaN(m)?'–':m} – ${isNaN(M)?'–':M} %</span></div>`; ]]]
+              - type: tile
+                entity: select.susicka_na_maso_rezim
+                name: Režim
+                hide_state: true
+                features:
+                  - type: select-options
+                features_position: inline
+                card_mod:
+                  style: "ha-card{background:none;border:none;box-shadow:none}"
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: select.susicka_na_maso_rezim
+                    state: Ručně
+                card:
+                  type: tile
+                  entity: number.susicka_na_maso_rucni_vykon
+                  name: Ruční výkon
+                  features:
+                    - type: numeric-input
+                      style: slider
+                  features_position: bottom
+                  card_mod:
+                    style: "ha-card{background:none;border:none;box-shadow:none}"
+
+      # ---------------------------------------------------------------- Program
+      - type: grid
+        cards:
+          - type: heading
+            heading: Program
+            heading_style: title
+            icon: mdi:timer-sand
+
+          - type: custom:stack-in-card
+            grid_options:
+              columns: full
+            visibility:
+              - condition: state
+                entity: binary_sensor.susicka_na_maso_vyzadovan_zasah
+                state: "on"
+            cards:
+              - type: custom:button-card
+                template: vrm_head
+                entity: sensor.susicka_na_maso_pozadovany_zasah
+                custom_fields:
+                  title: "<ha-icon icon='mdi:hand-back-right' style='--mdc-icon-size:18px;color:var(--warning-color)'></ha-icon><span style='color:var(--warning-color)'>Vyžadován zásah</span>"
+                  extra: "[[[ return 'program běží dál'; ]]]"
+                  value: "[[[ return states['sensor.susicka_na_maso_pozadovany_zasah']?.state ?? '–'; ]]]"
+              - type: custom:mushroom-entity-card
+                entity: button.susicka_na_maso_zasah_proveden
+                name: Zásah proveden
+                icon: mdi:check
+                icon_color: green
+                tap_action:
+                  action: perform-action
+                  perform_action: button.press
+                  target:
+                    entity_id: button.susicka_na_maso_zasah_proveden
+                  confirmation:
+                    text: Potvrdit provedení zásahu?
+                card_mod:
+                  style: "ha-card{background:none;border:none;box-shadow:none}"
+
+          - type: custom:stack-in-card
+            grid_options:
+              columns: full
+            cards:
+              - type: custom:button-card
+                template: vrm_head
+                entity: sensor.susicka_na_maso_faze_profilu
+                custom_fields:
+                  title: "<ha-icon icon='mdi:food-steak' style='--mdc-icon-size:18px'></ha-icon>Program"
+                  extra: "[[[ return states['select.susicka_na_maso_profil']?.state ?? '–'; ]]]"
+                  value: |-
+                    [[[ const st=(id)=>states[id]?states[id].state:'unavailable';
+                    if(st('binary_sensor.susicka_na_maso_program_bezi')==='on') return st('sensor.susicka_na_maso_faze_profilu');
+                    return st('binary_sensor.susicka_na_maso_program_dokoncen')==='on'?'Dokončeno':'Neběží'; ]]]
+              # Stage timeline of the selected profile with the current position
+              - type: custom:button-card
+                variables:
+                  profiles: &profiles
+                    # name, level, guide texts, stages as in profiles.yaml:
+                    # [hours, RH, band, duty min, duty max, Tmax, T lo, T hi, RH lo, RH hi, name, action]
+                    - name: Vlastní
+                      level: libovolná
+                      about: Profil se nepoužije, sušička reguluje podle hodnot v sekci Nastavení regulace. Pro vlastní recepty a pokusy.
+                      meat: libovolné
+                      room: libovolné, hodnoty nastavíš sám
+                      prep: podle receptu
+                      done: podle receptu, nejlépe vážením (úbytek hmotnosti)
+                      tip: Délku programu nastav ručně v sekci Nastavení regulace.
+                      stages: []
+                    - name: Biltong teplý
+                      level: začátečník
+                      about: Jihoafrické sušené hovězí v proužcích, nakládané v octu se solí a koriandrem. Nejrychlejší profil, hotovo do týdne.
+                      meat: hovězí kýta nebo zvěřina, proužky 2–3 cm silné, krájené po vláknech
+                      room: teplá místnost 20–30 °C, suchý vzduch pod 50 %; sušička netopí, teplota je daná místností
+                      prep: naložit do octa, soli a koření na 12–24 h do lednice, osušit, zavěsit na háčky tak, aby se kusy nedotýkaly
+                      done: povrch tmavý a pevný, při stisku nepovolí, uvnitř může zůstat růžový; úbytek hmotnosti kolem 50 %
+                      tip: První den mírnější sušení, aby povrch nezatvrdl dřív, než vyschne vnitřek. Od 3. dne kontrolovat stiskem.
+                      stages:
+                        - [24, 55, 15, 40, 100, 24, 18, 26, 30, 70, Náběh, null]
+                        - [96, 50, 15, 40, 100, 33, 20, 35, 25, 60, Sušení, null]
+                    - name: Biltong / droëwors tradiční
+                      level: začátečník
+                      about: Biltong nebo droëwors (tenké klobásky) sušené pomaleji v chladnější místnosti. Nejjistější volba pro první pokus.
+                      meat: hovězí kýta v proužcích 2–3 cm, nebo droëwors v tenkém střívku
+                      room: byt, chodba nebo sklep 12–22 °C, ideálně 15–20 °C, vlhkost vzduchu pod 65 %
+                      prep: biltong jako u teplé varianty; droëwors naplnit, zavěsit ve smyčkách
+                      done: pevné, ne tvrdé; droëwors bývá hotové dřív (3–4 dny)
+                      tip: Droëwors kontrolovat od 3. dne, program lze ukončit tlačítkem Stop.
+                      stages:
+                        - [144, 65, 10, 30, 80, 20, 12, 22, 45, 80, Sušení, null]
+                    - name: Bresaola
+                      level: středně pokročilý
+                      about: Italská sušená hovězí svalovina z celého kusu. Pomalé sušení v chladu po dobu několika týdnů.
+                      meat: hovězí ořech nebo kýta v celku, bez blan a tuku
+                      room: sklep nebo chladná místnost 10–16 °C, vlhkost vzduchu 65–80 %; vlhčí vzduch sušička nesníží
+                      prep: naložit do nakládací soli (s dusitanem) a koření, nechat prosolit v lednici podle tloušťky (obvykle 1–2 týdny), opláchnout, osušit, zavěsit v síťce
+                      done: úbytek hmotnosti 35–40 %, kus vážit na začátku a každý týden; na řezu jednolitě tmavě červený
+                      tip: Tvrdý suchý okraj znamená příliš rychlé sušení, sniž maximální výkon. Bílá plíseň je v pořádku.
+                      stages:
+                        - [168, 80, 8, 15, 60, 15, 10, 16, 70, 90, Náběh, null]
+                        - [840, 75, 8, 15, 50, 15, 10, 16, 65, 85, Sušení, null]
+                    - name: Fermentovaný salám (sušení)
+                      level: pokročilý
+                      about: Jen sušení a zrání salámů po fermentaci. Samotnou fermentaci (teplo a vysoká vlhkost) sušička neumí, proběhne předem jinde.
+                      meat: salámy se startovací kulturou a nakládací solí, po fermentaci
+                      room: sklep 10–16 °C, vlhkost vzduchu 70–90 %
+                      prep: zfermentovat podle receptu (obvykle 1–3 dny při 20–24 °C a vysoké vlhkosti), pak zavěsit tak, aby se salámy nedotýkaly
+                      done: úbytek hmotnosti 30–40 %, salám pevný v celém průřezu
+                      tip: Proudění se v čase snižuje, aby salám nezatvrdl na povrchu. Bílá ušlechtilá plíseň je žádoucí, zelenou nebo černou otřít octem.
+                      stages:
+                        - [168, 85, 6, 30, 80, 15, 10, 16, 78, 95, Osychání, null]
+                        - [336, 80, 6, 20, 60, 15, 10, 16, 70, 88, Sušení, null]
+                        - [336, 75, 6, 15, 50, 15, 10, 16, 65, 82, Dosoušení, null]
+                    - name: Bündnerfleisch
+                      level: pokročilý
+                      about: Švýcarské sušené hovězí, dlouhé sušení v chladu se třemi lisováními, která dají hranatý tvar a vyrovnají vlhkost v kusu.
+                      meat: libová hovězí kýta v celých kusech
+                      room: chladný sklep 8–18 °C, vlhkost vzduchu 60–85 %, stabilní po celé 3 měsíce
+                      prep: nasolit směsí soli, nakládací soli a koření a nechat v chladu prosolit (několik týdnů), pak zavěsit
+                      done: úbytek hmotnosti 45–55 %, tmavý pevný kus
+                      tip: Na konci fází 1–3 dashboard vyžádá lisování (kusy mezi prkna se závažím na den), po něm stisknout Zásah proveden.
+                      stages:
+                        - [504, 80, 8, 20, 60, 14, 8, 18, 70, 88, Sušení 1, Lisování 1]
+                        - [672, 77, 8, 20, 60, 14, 8, 18, 68, 85, Sušení 2, Lisování 2]
+                        - [672, 75, 8, 15, 50, 14, 8, 18, 65, 85, Sušení 3, Lisování 3]
+                        - [504, 72, 8, 15, 50, 14, 8, 18, 62, 82, Dosoušení, null]
+                    - name: Pastırma
+                      level: středně pokročilý
+                      about: Turecké sušené hovězí, po sušení obalené kořenící pastou çemen (pískavice, česnek, paprika).
+                      meat: hovězí roštěná, svíčková nebo kýta, plátky 4–6 cm
+                      room: prvních 6 dní kolem 15 °C, pak kolem 20 °C (jaro, podzim nebo přesun sušičky)
+                      prep: nasolit nasucho, nechat v chladu 1–2 dny, opláchnout a zavěsit
+                      done: pevné na řezu, po nanesení çemenu ještě 10 dní dosoušet
+                      tip: Ruční kroky dashboard vyžádá na konci fází (2× lisování, pak çemen na 1 den v lednici). Program mezitím běží dál.
+                      stages:
+                        - [144, 80, 8, 20, 70, 16, 12, 18, 70, 88, Sušení 15 °C, Lisování]
+                        - [120, 70, 10, 25, 80, 21, 16, 23, 60, 80, Sušení 20 °C, Lisování]
+                        - [120, 70, 10, 25, 80, 21, 16, 23, 60, 80, Sušení 20 °C, Nanést çemen (1 den v lednici)]
+                        - [240, 70, 10, 25, 80, 21, 16, 23, 60, 80, Dosoušení, null]
+                show_icon: false
+                show_name: false
+                show_state: false
+                tap_action:
+                  action: none
+                styles:
+                  card:
+                    - padding: 0 16px 4px
+                    - box-shadow: none
+                    - background: none
+                    - border: none
+                  grid:
+                    - grid-template-areas: '"tl"'
+                    - grid-template-columns: 1fr
+                  custom_fields:
+                    tl:
+                      - justify-self: stretch
+                      - width: 100%
+                      - font-size: 12px
+                      - text-align: left
+                custom_fields:
+                  tl: |-
+                    [[[ const st=(id)=>states[id]?states[id].state:'unavailable';
+                    const p=variables.profiles.find(x=>x.name===st('select.susicka_na_maso_profil'));
+                    if(!p||!p.stages.length) return '';
+                    const C=['#3b82f6','#14b8a6','#f4a300','#7c4dff'];
+                    const tot=p.stages.reduce((a,s)=>a+s[0],0);
+                    const el=parseFloat(st('sensor.susicka_na_maso_program_uplynulo'))*24;
+                    const run=st('binary_sensor.susicka_na_maso_program_bezi')==='on'&&!isNaN(el);
+                    const pos=Math.min(100,Math.max(0,el/tot*100));
+                    let seg='', lab='', acc=0;
+                    p.stages.forEach((s,i)=>{
+                      seg+=`<div style='flex:${s[0]};background:${C[i%4]};opacity:${run&&acc+s[0]<=el?0.35:0.85}'></div>`
+                        +(s[11]&&i<p.stages.length-1?"<div class='a'></div>":'');
+                      lab+=`<span><i style='background:${C[i%4]}'></i>${+(acc/24+1).toFixed(1)}. den ${s[10]} · ${s[1]} %</span>`;
+                      acc+=s[0];
+                    });
+                    return `<div class='w'><div class='tl'>${seg}</div>`+(run?`<div class='now' style='left:${pos}%'></div>`:'')+`</div><div class='lab'>${lab}</div>`; ]]]
+                extra_styles: >-
+                  .w{position:relative;padding:4px 0}
+                  .tl{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden}
+                  .tl .a{flex:0 0 3px;background:var(--warning-color)}
+                  .now{position:absolute;top:0;width:2px;height:16px;margin-left:-1px;background:var(--primary-text-color);border-radius:1px}
+                  .lab{display:flex;flex-wrap:wrap;gap:4px 12px;padding-top:4px;color:var(--secondary-text-color)}
+                  .lab i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}
+              - type: custom:button-card
+                template: vrm_details
+                custom_fields:
+                  rows: |-
+                    [[[ const st=(id)=>states[id]?states[id].state:'unavailable';
+                    const n=(id,d=0)=>{const x=parseFloat(st(id));return isNaN(x)?'–':+x.toFixed(d)};
+                    const dt=(id)=>{const t=Date.parse(st(id));return isNaN(t)?'–':new Date(t).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})};
+                    const r=(l,v)=>`<div class='r'><span class='l'>${l}</span><span>${v}</span></div>`;
+                    const run=st('binary_sensor.susicka_na_maso_program_bezi')==='on';
+                    const nx=parseFloat(st('sensor.susicka_na_maso_do_dalsi_faze'));
+                    let h=r('Délka programu',n('number.susicka_na_maso_program_delka',1)+' d');
+                    if(run||st('binary_sensor.susicka_na_maso_program_dokoncen')==='on')
+                      h+=`<div class='i'><span class='l'>Uplynulo</span><span>${n('sensor.susicka_na_maso_program_uplynulo',1)} d</span><span class='l'>Zbývá</span><span>${n('sensor.susicka_na_maso_program_zbyva',1)} d</span></div>`
+                        +r('Konec',dt('sensor.susicka_na_maso_program_konec'));
+                    if(run&&!isNaN(nx)) h+=r('Do další fáze',nx<24?n('sensor.susicka_na_maso_do_dalsi_faze',1)+' h':+(nx/24).toFixed(1)+' d');
+                    if(run) h+=r('Výpadky v programu',n('sensor.susicka_na_maso_program_pocet_vypadku')+' × · '+n('sensor.susicka_na_maso_program_doba_vypadku',1)+' h');
+                    return h; ]]]
+              - type: tile
+                entity: select.susicka_na_maso_profil
+                name: Profil
+                hide_state: true
+                features:
+                  - type: select-options
+                features_position: inline
+                card_mod:
+                  style: "ha-card{background:none;border:none;box-shadow:none}"
+              - type: grid
+                columns: 2
+                square: false
+                cards:
+                  - type: custom:mushroom-entity-card
+                    entity: button.susicka_na_maso_program_start
+                    name: Start
+                    icon: mdi:play
+                    icon_color: green
+                    layout: horizontal
+                    tap_action:
+                      action: perform-action
+                      perform_action: button.press
+                      target:
+                        entity_id: button.susicka_na_maso_program_start
+                      confirmation:
+                        text: Spustit program od začátku? Uplynulá doba a fáze se vynulují.
+                    card_mod:
+                      style: "ha-card{background:none;border:none;box-shadow:none}"
+                  - type: custom:mushroom-entity-card
+                    entity: button.susicka_na_maso_program_stop
+                    name: Stop
+                    icon: mdi:stop
+                    icon_color: red
+                    layout: horizontal
+                    tap_action:
+                      action: perform-action
+                      perform_action: button.press
+                      target:
+                        entity_id: button.susicka_na_maso_program_stop
+                      confirmation:
+                        text: Zastavit program?
+                    card_mod:
+                      style: "ha-card{background:none;border:none;box-shadow:none}"
+
+      # ---------------------------------------------------------------- Profile guide
+      - type: grid
+        cards:
+          - type: heading
+            heading: Průvodce profily
+            heading_style: title
+            icon: mdi:book-open-page-variant
+
+          - type: custom:stack-in-card
+            grid_options:
+              columns: full
+            cards:
+              - type: custom:button-card
+                template: vrm_head
+                entity: sensor.susicka_na_maso_teplota
+                variables:
+                  profiles: *profiles
+                custom_fields:
+                  title: "<ha-icon icon='mdi:lightbulb-on-outline' style='--mdc-icon-size:18px'></ha-icon>Podle teploty v komoře"
+                  extra: |-
+                    [[[ const x=parseFloat(states['sensor.susicka_na_maso_teplota']?.state);
+                    return isNaN(x)?'':'teď '+x.toFixed(1)+' °C'; ]]]
+                  value: |-
+                    [[[ const x=parseFloat(states['sensor.susicka_na_maso_teplota']?.state);
+                    if(isNaN(x)) return 'Teplota není známá';
+                    const ok=variables.profiles.filter(p=>p.stages.length&&x>=p.stages[0][6]&&x<=p.stages[0][7]).map(p=>p.name);
+                    return ok.length?'Vhodné: '+ok.join(', '):'Teď nevyhovuje žádný profil'; ]]]
+                styles:
+                  custom_fields:
+                    value:
+                      - font-size: 16px
+                      - line-height: "1.4"
+                      - text-align: left
+              # One collapsible item per profile, the selected one is open.
+              # Only the profile select and program state are read, so the open/closed
+              # state is not reset by sensor updates.
+              - type: custom:button-card
+                variables:
+                  profiles: *profiles
+                show_icon: false
+                show_name: false
+                show_state: false
+                tap_action:
+                  action: none
+                styles:
+                  card:
+                    - padding: 0 16px 12px
+                    - box-shadow: none
+                    - background: none
+                    - border: none
+                    - cursor: default
+                  grid:
+                    - grid-template-areas: '"guide"'
+                    - grid-template-columns: 1fr
+                  custom_fields:
+                    guide:
+                      - justify-self: stretch
+                      - width: 100%
+                      - font-size: 13px
+                      - text-align: left
+                custom_fields:
+                  guide: |-
+                    [[[ globalThis.dashTap=(ev,el)=>{ev.stopPropagation();const a=JSON.parse(el.dataset.tap);el.dispatchEvent(new CustomEvent('hass-action',{bubbles:true,composed:true,detail:{config:{entity:a.entity,tap_action:a},action:'tap'}}))};
+                    const cur=states['select.susicka_na_maso_profil']?.state;
+                    const run=states['binary_sensor.susicka_na_maso_program_bezi']?.state==='on';
+                    const e=(s)=>String(s).replace(/[&<>"'`$\\]/g,c=>'&#'+c.charCodeAt(0)+';');
+                    const dd=(h)=>+(h/24).toFixed(1)+' d';
+                    const C=['#3b82f6','#14b8a6','#f4a300','#7c4dff'];
+                    const kv=(l,v)=>`<div class='kv'><span class='l'>${l}</span><span>${e(v)}</span></div>`;
+                    const one=(p)=>{
+                      const tot=p.stages.reduce((a,s)=>a+s[0],0), act=p.name===cur;
+                      const tap={action:'perform-action',perform_action:'select.select_option',
+                        target:{entity_id:'select.susicka_na_maso_profil'},data:{option:p.name},
+                        confirmation:{text:!tot?'Zvolit Vlastní? Profil přestane řídit regulaci, zůstanou aktuální hodnoty z Nastavení regulace.'
+                                          :run?`Program běží. Po změně na ${p.name} se fáze určí podle dosavadní doby programu a přepíší nastavení regulace. Změnit?`
+                                                :`Zvolit profil ${p.name}? Nastaví i délku programu, spustíš ho tlačítkem Start.`}};
+                      let h=`<details${act?' open':''}><summary><span class='t'>${e(p.name)}</span>`
+                        +(act?"<span class='on'>zvoleno</span>":'')
+                        +`<span class='m'>${tot?dd(tot):'–'} · ${e(p.level)}</span></summary><div class='b'>`
+                        +`<p>${e(p.about)}</p>`+kv('Maso',p.meat)+kv('Prostředí',p.room)+kv('Příprava',p.prep);
+                      if(tot){
+                        h+=`<div class='tl'>`+p.stages.map((s,i)=>`<div style='flex:${s[0]};background:${C[i%4]}'></div>`
+                          +(s[11]&&i<p.stages.length-1?"<div class='a'></div>":'')).join('')+`</div>`
+                          +`<table><tr><th>Fáze</th><th>Délka</th><th>Cíl RH</th><th>Výkon</th><th>Teplota</th></tr>`
+                          +p.stages.map((s,i)=>`<tr><td><i style='background:${C[i%4]}'></i>${e(s[10])}</td><td>${dd(s[0])}</td><td>${s[1]} %</td><td>${s[3]}–${s[4]} %</td><td>${s[6]}–${s[7]} °C</td></tr>`
+                            +(s[11]?`<tr class='act'><td colspan='5'>✋ ${e(s[11])}</td></tr>`:'')).join('')+`</table>`;
+                      }
+                      h+=kv('Hotovo',p.done)+`<p class='tip'>${e(p.tip)}</p>`;
+                      if(!act) h+=`<div class='btn' data-tap='${e(JSON.stringify(tap))}' onclick='dashTap(event,this)'>Zvolit profil</div>`;
+                      return h+`</div></details>`;
+                    };
+                    return variables.profiles.map(one).join('')
+                      +"<p class='note'>Hodnoty jsou orientační z receptů a studií, ne ověřené limity bezpečnosti potravin. Hotovost rozhoduje úbytek hmotnosti, ne uplynulá doba.</p>"; ]]]
+                extra_styles: >-
+                  details{border-top:1px solid var(--divider-color);pointer-events:auto}
+                  summary{display:flex;align-items:center;gap:8px;padding:9px 0;cursor:pointer;list-style:none;pointer-events:auto}
+                  summary::-webkit-details-marker{display:none}
+                  summary::before{content:'›';width:10px;color:var(--secondary-text-color);transition:transform .15s}
+                  details[open] summary::before{transform:rotate(90deg)}
+                  summary .t{font-size:14px}
+                  summary .m{margin-left:auto;color:var(--secondary-text-color);white-space:nowrap}
+                  summary .on{font-size:11px;padding:1px 6px;border-radius:8px;background:var(--primary-color);color:var(--text-primary-color)}
+                  .b{padding:0 0 10px 18px;line-height:1.45}
+                  .b p{margin:0 0 6px}
+                  .kv{display:flex;gap:10px;padding:3px 0}
+                  .kv .l{flex:0 0 72px;color:var(--secondary-text-color)}
+                  .tl{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden;margin:8px 0 4px}
+                  .tl .a{flex:0 0 3px;background:var(--warning-color)}
+                  table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:12px}
+                  th{font-weight:400;color:var(--secondary-text-color);text-align:left;padding:3px 4px 3px 0}
+                  td{padding:3px 4px 3px 0;border-top:1px solid var(--divider-color);white-space:nowrap}
+                  td i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+                  tr.act td{color:var(--warning-color);border-top:none;padding-top:0}
+                  .tip{color:var(--secondary-text-color);font-style:italic}
+                  .btn{display:inline-block;margin-top:4px;padding:5px 14px;border-radius:14px;border:1px solid var(--primary-color);color:var(--primary-color);cursor:pointer;pointer-events:auto}
+                  .btn:hover{background:var(--primary-color);color:var(--text-primary-color)}
+                  .note{margin:8px 0 0;font-size:11px;color:var(--secondary-text-color)}
+
+      # ---------------------------------------------------------------- Chart
+      - type: grid
+        column_span: 3
+        cards:
+          - type: heading
+            heading: Průběh za 7 dní
+            heading_style: title
+            icon: mdi:chart-line
+          - type: custom:apexcharts-card
+            graph_span: 7d
+            header:
+              show: false
+            grid_options:
+              columns: full
+            apex_config:
+              chart:
+                height: 260
+              legend:
+                show: true
+                position: bottom
+              grid:
+                borderColor: rgba(127,127,127,0.15)
+              dataLabels:
+                enabled: false
+            yaxis:
+              - id: t
+                decimals: 0
+                apex_config:
+                  title:
+                    text: °C
+              - id: p
+                opposite: true
+                min: 0
+                max: 100
+                decimals: 0
+                apex_config:
+                  title:
+                    text: "%"
+            series:
+              - entity: sensor.susicka_na_maso_teplota
+                name: Teplota
+                color: "#e5604d"
+                yaxis_id: t
+                stroke_width: 1.5
+                curve: straight
+                group_by: {func: avg, duration: 15min}
+              - entity: sensor.susicka_na_maso_vlhkost
+                name: Vlhkost
+                color: "#3b82f6"
+                yaxis_id: p
+                stroke_width: 1.5
+                curve: straight
+                group_by: {func: avg, duration: 15min}
+              - entity: number.susicka_na_maso_cilova_vlhkost
+                name: Cílová vlhkost
+                color: "#93c5fd"
+                yaxis_id: p
+                stroke_width: 1
+                curve: stepline
+              - entity: sensor.susicka_na_maso_vykon_ventilatoru
+                name: Výkon ventilátorů
+                color: "#22a06b"
+                yaxis_id: p
+                type: area
+                opacity: 0.12
+                stroke_width: 1
+                curve: straight
+                group_by: {func: avg, duration: 15min}
+
+      # ---------------------------------------------------------------- Settings
+      - type: grid
+        cards:
+          - type: heading
+            heading: Nastavení regulace
+            heading_style: title
+            icon: mdi:tune-variant
+          - type: heading
+            heading: Profil hodnoty přepíše při každé změně fáze
+            heading_style: subtitle
+          - type: tile
+            entity: number.susicka_na_maso_cilova_vlhkost
+            name: Cílová vlhkost
+            features: [{type: numeric-input, style: buttons}]
+            features_position: bottom
+            grid_options: {columns: 6}
+          - type: tile
+            entity: number.susicka_na_maso_pasmo_regulace_vlhkosti
+            name: Pásmo vlhkosti
+            features: [{type: numeric-input, style: buttons}]
+            features_position: bottom
+            grid_options: {columns: 6}
+          - type: tile
+            entity: number.susicka_na_maso_minimalni_vykon
+            name: Min. výkon
+            features: [{type: numeric-input, style: buttons}]
+            features_position: bottom
+            grid_options: {columns: 6}
+          - type: tile
+            entity: number.susicka_na_maso_maximalni_vykon
+            name: Max. výkon
+            features: [{type: numeric-input, style: buttons}]
+            features_position: bottom
+            grid_options: {columns: 6}
+          - type: tile
+            entity: number.susicka_na_maso_maximalni_teplota
+            name: Max. teplota
+            features: [{type: numeric-input, style: buttons}]
+            features_position: bottom
+            grid_options: {columns: 6}
+          - type: tile
+            entity: number.susicka_na_maso_nouzovy_vykon
+            name: Nouzový výkon
+            features: [{type: numeric-input, style: buttons}]
+            features_position: bottom
+            grid_options: {columns: 6}
+          - type: tile
+            entity: number.susicka_na_maso_program_delka
+            name: Délka programu
+            features: [{type: numeric-input, style: buttons}]
+            features_position: bottom
+            grid_options: {columns: 12}
+          - type: tile
+            entity: select.susicka_na_maso_program_odpocet
+            name: Odpočet
+            hide_state: true
+            features: [{type: select-options}]
+            features_position: inline
+            grid_options: {columns: 12}
+          - type: tile
+            entity: select.susicka_na_maso_program_po_dokonceni
+            name: Po dokončení
+            hide_state: true
+            features: [{type: select-options}]
+            features_position: inline
+            grid_options: {columns: 12}
+
+      # ---------------------------------------------------------------- Operation and outages
+      - type: grid
+        cards:
+          - type: heading
+            heading: Provoz a výpadky
+            heading_style: title
+            icon: mdi:power-plug-outline
+          - type: custom:stack-in-card
+            grid_options:
+              columns: full
+            cards:
+              - type: custom:button-card
+                template: vrm_head
+                entity: sensor.susicka_na_maso_dostupnost
+                custom_fields:
+                  title: "<ha-icon icon='mdi:check-network-outline' style='--mdc-icon-size:18px'></ha-icon>Dostupnost"
+                  extra: |-
+                    [[[ const x=parseFloat(states['sensor.susicka_na_maso_pocet_vypadku']?.state);
+                    return isNaN(x)?'':x.toFixed(0)+' výpadků celkem'; ]]]
+                  value: |-
+                    [[[ const x=parseFloat(states['sensor.susicka_na_maso_dostupnost']?.state);
+                    return (isNaN(x)?'–':+x.toFixed(2))+"<span class='u'>%</span>"; ]]]
+              - type: custom:button-card
+                template: vrm_details
+                custom_fields:
+                  rows: |-
+                    [[[ const st=(id)=>states[id]?states[id].state:'unavailable';
+                    const hd=(id)=>{const x=parseFloat(st(id));if(isNaN(x))return '–';const d=Math.floor(x/24);return d?d+' d '+Math.round(x%24)+' h':x.toFixed(1)+' h'};
+                    const dt=(id)=>{const t=Date.parse(st(id));return isNaN(t)?'–':new Date(t).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})};
+                    const r=(l,v)=>`<div class='r'><span class='l'>${l}</span><span>${v}</span></div>`;
+                    const last=parseFloat(st('sensor.susicka_na_maso_posledni_vypadek_delka'));
+                    const w=parseFloat(st('sensor.susicka_na_maso_wifi_signal'));
+                    let h=r('Doba provozu',hd('sensor.susicka_na_maso_celkova_doba_provozu'))
+                      +r('Běh ventilátorů',hd('sensor.susicka_na_maso_doba_behu_ventilatoru'))
+                      +r('Doba výpadků',hd('sensor.susicka_na_maso_celkova_doba_vypadku'))
+                      +r('Poslední výpadek',dt('sensor.susicka_na_maso_posledni_vypadek')+(isNaN(last)?'':' · '+last.toFixed(0)+' min'))
+                      +r('Poslední start',dt('sensor.susicka_na_maso_posledni_start'))
+                      +r('WiFi',isNaN(w)?'–':w.toFixed(0)+' dBm');
+                    const hist=st('sensor.susicka_na_maso_historie_vypadku');
+                    if(hist&&!['unknown','unavailable','','–'].includes(hist))
+                      h+=`<div class='r'><span class='l'>Historie výpadků</span><span></span></div>`
+                        +hist.split('; ').map(x=>{const m=x.match(/^(\S+ \S+) (.+)$/);return m?`<div class='i'><span class='l'>${m[1]}</span><span>${m[2]}</span></div>`:''}).join('');
+                    return h; ]]]
+
+      # ---------------------------------------------------------------- Long-term statistics
+      - type: grid
+        column_span: 3
+        cards:
+          - type: heading
+            heading: Dlouhodobě
+            heading_style: title
+            icon: mdi:chart-timeline-variant
+          - type: statistics-graph
+            title: Teplota a vlhkost, denní průměr
+            period: day
+            days_to_show: 180
+            chart_type: line
+            stat_types: [mean, min, max]
+            entities:
+              - sensor.susicka_na_maso_teplota
+              - sensor.susicka_na_maso_vlhkost
+            grid_options:
+              columns: 12
+          - type: statistics-graph
+            title: Provoz a výpadky po dnech
+            period: day
+            days_to_show: 180
+            chart_type: bar
+            stat_types: [change]
+            entities:
+              - sensor.susicka_na_maso_celkova_doba_provozu
+              - sensor.susicka_na_maso_celkova_doba_vypadku
+              - sensor.susicka_na_maso_doba_behu_ventilatoru
+            grid_options:
+              columns: 12

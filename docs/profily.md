@@ -98,6 +98,8 @@ odpovídají doporučení snižovat proudění v pozdějších fázích.
 
 Úprava profilu: tabulka ve skriptu `profile_update` v `profiles.yaml` (řádek = fáze),
 nová volba se přidá do `options` selectu a do pole `profiles[]` ve stejném pořadí.
+Stejnou tabulku a texty průvodce obsahuje `profiles` v
+[dashboard_v2.yaml](../homeassistant/dashboard_v2.yaml); shodu hlídá `scripts/check_dashboard.py`.
 
 ## Zdroje
 

@@ -116,8 +116,9 @@ Timestampy jsou v ESPHome typu float, přesnost je proto cca ±1 min.
   **natrvalo**, bez ohledu na `purge_keep_days`.
 - Historie textových a timestamp senzorů se maže po `purge_keep_days` (výchozí 10 dní).
   Na zařízení zůstává posledních 8 výpadků a celkové čítače.
-- Přehled: [homeassistant/dashboard.yaml](../homeassistant/dashboard.yaml) (karty programu,
-  provozu, výpadků a grafy po dnech a týdnech). Export dat: Historie v HA → stáhnout CSV.
+- Přehled: [homeassistant/dashboard_v2.yaml](../homeassistant/dashboard_v2.yaml) (styl
+  Přehledu, průvodce profily) nebo jednodušší [dashboard.yaml](../homeassistant/dashboard.yaml)
+  (nativní karty programu, provozu, výpadků a grafy po dnech a týdnech). Export dat: Historie v HA → stáhnout CSV.
 
 ## Entity v Home Assistant
 
