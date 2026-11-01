@@ -76,6 +76,9 @@ redesignovaný Přehled: bloky s velkou hodnotou, grafem a řádky detailů.
 - Instalace jako samostatný dashboard: Nastavení → Dashboardy → Přidat → Upravit →
   Editor kódu → vložit celý soubor.
   Do dashboardu, který už má šablony `vrm_head`/`vrm_details`, stačí vložit položku z `views:`.
+- Nasazeno v HA jako dashboard `/dashboard-susicka` (Sušička na maso). Aktualizace: znovu
+  vložit soubor v editoru kódu, nebo `tools/save_dashboard.sh` z projektu úklidu dashboardů
+  (JSON převedený z YAML).
 
 Tabulky fází v dashboardu musí odpovídat [profiles.yaml](esphome/packages/profiles.yaml).
 Kontrola po každé změně profilů nebo dashboardu:
@@ -106,5 +109,6 @@ scripts/check_dashboard.py   # potřebuje PyYAML a node (PyYAML má i python ESP
 - [ ] Ověřit na hardwaru: detekce výpadku odpojením napájení, dokončení programu
 - [ ] Doladit výchozí parametry automatiky a profilů podle reálné komory
 - [x] Dashboard v2 ve stylu Přehledu s průvodcem profily
-- [ ] Nasadit dashboard v2 v HA a ověřit vzhled po přidání zařízení
+- [x] Nasadit dashboard v2 v HA (`/dashboard-susicka`)
+- [ ] Ověřit vzhled dashboardu s živými daty zařízení
 - [ ] Volitelně: tenzometr HX711 (konec podle úbytku hmotnosti), SHT41 místo HTU21D
