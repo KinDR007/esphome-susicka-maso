@@ -1,0 +1,8 @@
+# Custom web UI (esphome/components/susicka_ui) instead of the stock ESPHome page.
+# Embedded in the firmware, works without internet and Home Assistant.
+# Requires external_components with susicka_ui (see susicka-maso.yaml).
+
+web_server:
+  js_url: "/0.js"
+
+susicka_ui:

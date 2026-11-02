@@ -10,3 +10,5 @@ zadani.md
 
 .DS_Store
 hw/stl/
+
+__pycache__/

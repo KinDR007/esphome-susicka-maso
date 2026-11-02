@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Validate Home Assistant dashboards in homeassistant/ against the ESPHome packages.
+"""Validate Home Assistant dashboards in homeassistant/ and the on-device web UI
+(esphome/components/susicka_ui) against the ESPHome packages.
 
 Checks:
   - every susicka_na_maso entity id exists in the packages (HA naming: friendly name + name),
   - profile names and stage tables in dashboard variables match profiles.yaml,
   - every button-card JS template ([[[ ... ]]]) runs in node for several device states
-    and returns a string.
+    and returns a string,
+  - web UI: entity names in app.js exist, guide.yaml matches profiles.yaml,
+    profile texts in the dashboards match guide.yaml.
 
 Usage: scripts/check_dashboard.py [dashboard.yaml ...]   (default: homeassistant/*.yaml)
 Needs PyYAML and node.
@@ -28,6 +31,7 @@ except ImportError:
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PKG = os.path.join(ROOT, "esphome", "packages")
+WEBUI = os.path.join(ROOT, "esphome", "components", "susicka_ui")
 FRIENDLY = "Sušička na maso"
 FAN_NAMES = ["Ventilátor 1", "Ventilátor 2"]
 DOMAINS = {"sensor": "sensor", "binary_sensor": "binary_sensor", "text_sensor": "sensor",
@@ -60,16 +64,21 @@ def names(node):
             yield from names(v)
 
 
-def package_entities():
-    ids = set()
+def package_names():
+    """(ESPHome domain, entity name) of every entity in the packages."""
+    out = set()
     for path in glob.glob(os.path.join(PKG, "*.yaml")):
         with open(path, encoding="utf-8") as f:
             cfg = yaml.load(f, Loader=Loader) or {}
-        for dom, ha_dom in DOMAINS.items():
+        for dom in DOMAINS:
             for name in names(cfg.get(dom) or []):
                 for n in ([name.replace("${fan_name}", fn) for fn in FAN_NAMES] if "${fan_name}" in name else [name]):
-                    ids.add(f"{ha_dom}.{slug(FRIENDLY + ' ' + n)}")
-    return ids
+                    out.add((dom, n))
+    return out
+
+
+def package_entities():
+    return {f"{DOMAINS[dom]}.{slug(FRIENDLY + ' ' + n)}" for dom, n in package_names()}
 
 
 def esphome_profiles():
@@ -113,25 +122,49 @@ def find_variables(node, out):
             find_variables(v, out)
 
 
-def check_profiles(dash, options, stages, errors):
+GUIDE_KEYS = ("level", "about", "meat", "room", "prep", "done", "tip")
+
+
+def check_profile_list(profiles, options, stages, errors, guide=None):
+    got = [p["name"] for p in profiles]
+    if got != options:
+        errors.append(f"profile names {got} != select options {options}")
+        return
+    for i, (p, ref) in enumerate(zip(profiles, stages)):
+        rows = [[float(x) for x in s[:10]] + [s[10], s[11]] for s in p["stages"]]
+        if rows != ref:
+            errors.append(f"profile '{p['name']}' stages differ from profiles.yaml:\n  {rows}\n  {ref}")
+        for k in GUIDE_KEYS:
+            if not p.get(k):
+                errors.append(f"profile '{p['name']}' missing guide text '{k}'")
+            elif guide is not None and p[k] != guide[i][k]:
+                errors.append(f"profile '{p['name']}' text '{k}' differs from {os.path.relpath(WEBUI, ROOT)}/guide.yaml")
+
+
+def check_profiles(dash, options, stages, errors, guide):
     found = []
     find_variables(dash, found)
     for var in found:
-        profiles = var.get("profiles")
-        if profiles is None:
-            continue
-        got = [p["name"] for p in profiles]
-        if got != options:
-            errors.append(f"profile names {got} != select options {options}")
-            continue
-        for p, ref in zip(profiles, stages):
-            rows = [[float(x) for x in s[:10]] + [s[10], s[11]] for s in p["stages"]]
-            if rows != ref:
-                errors.append(f"profile '{p['name']}' stages differ from profiles.yaml:\n  {rows}\n  {ref}")
-            for k in ("level", "about", "meat", "room", "prep", "done", "tip"):
-                if not p.get(k):
-                    errors.append(f"profile '{p['name']}' missing guide text '{k}'")
+        if var.get("profiles") is not None:
+            check_profile_list(var["profiles"], options, stages, errors, guide)
     return len(found)
+
+
+def check_webui(options, stages):
+    """Entity names used by app.js and the guide data embedded in the firmware."""
+    errors = []
+    with open(os.path.join(WEBUI, "app.js"), encoding="utf-8") as f:
+        js = f.read()
+    known = package_names()
+    used = set(re.findall(r"'(sensor|binary_sensor|text_sensor|number|select|button|switch)/([^']+)'", js))
+    for dom, name in sorted(used - known):
+        errors.append(f"app.js: unknown entity {dom}/{name}")
+    with open(os.path.join(WEBUI, "guide.yaml"), encoding="utf-8") as f:
+        guide = yaml.safe_load(f)
+    check_profile_list(guide["profiles"], options, stages, errors)
+    if not guide.get("note"):
+        errors.append("guide.yaml: missing note")
+    return errors, len(used), guide["profiles"]
 
 
 def scenarios(entities):
@@ -230,6 +263,14 @@ def main(files):
     known = package_entities()
     options, stages = esphome_profiles()
     failed = False
+    errors, n_ui, guide = check_webui(options, stages)
+    if errors:
+        failed = True
+        print("FAIL web UI")
+        for e in errors:
+            print("  " + e)
+    else:
+        print(f"OK   web UI: {n_ui} entities, {len(guide)} profiles")
     for path in files:
         with open(path, encoding="utf-8") as f:
             dash = yaml.safe_load(f)
@@ -238,7 +279,7 @@ def main(files):
         for e in used:
             if e not in known:
                 errors.append(f"unknown entity {e}")
-        n_prof = check_profiles(dash, options, stages, errors)
+        n_prof = check_profiles(dash, options, stages, errors, guide)
         n_js = check_templates(dash, used, errors)
         rel = os.path.relpath(path, ROOT)
         if errors:

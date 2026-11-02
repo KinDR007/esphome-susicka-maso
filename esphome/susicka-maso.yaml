@@ -10,6 +10,11 @@ substitutions:
   # "false" = PWM wire directly on GPIO, "true" = through N-MOSFET (docs/zapojeni.md)
   fan_pwm_inverted: "false"
 
+external_components:
+  - source: github://KinDR007/esphome-susicka-maso@main
+    components: [susicka_ui]
+    refresh: 1d
+
 packages:
   susicka:
     url: https://github.com/KinDR007/esphome-susicka-maso
@@ -17,6 +22,7 @@ packages:
     refresh: 1d
     files:
       - esphome/packages/base.yaml
+      - esphome/packages/webui.yaml
       - esphome/packages/htu21d.yaml
       - esphome/packages/control.yaml
       - esphome/packages/runtime.yaml

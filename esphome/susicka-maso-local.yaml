@@ -8,8 +8,15 @@ substitutions:
   # "false" = PWM wire directly on GPIO, "true" = through N-MOSFET (docs/zapojeni.md)
   fan_pwm_inverted: "false"
 
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [susicka_ui]
+
 packages:
   base: !include packages/base.yaml
+  webui: !include packages/webui.yaml
   htu21d: !include packages/htu21d.yaml
   control: !include packages/control.yaml
   runtime: !include packages/runtime.yaml

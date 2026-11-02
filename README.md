@@ -15,8 +15,10 @@ esphome/
   susicka-maso.yaml     konfigurace zařízení, balíčky stahuje z GitHubu
   susicka-maso-local.yaml  totéž s lokálními balíčky (vývoj)
   secrets.yaml.example  šablona tajných údajů
+  components/susicka_ui/  vlastní webové rozhraní zařízení (app.js, app.css, guide.yaml)
   packages/
     base.yaml           deska, WiFi, API, OTA, web server, diagnostika
+    webui.yaml          vlastní webové rozhraní místo stránky ESPHome
     htu21d.yaml         I2C + teplota/vlhkost
     control.yaml        režimy a automatická regulace
     runtime.yaml        dlouhodobý program, výpadky, statistiky provozu
@@ -30,7 +32,8 @@ homeassistant/
   dashboard.yaml        jednoduchý pohled (nativní karty)
   dashboard_v2.yaml     dashboard ve stylu Přehledu, průvodce profily (custom karty)
 scripts/
-  check_dashboard.py    kontrola dashboardů: entity, tabulky profilů, JS šablony
+  check_dashboard.py    kontrola dashboardů a webového UI: entity, tabulky profilů, JS šablony
+  webui_dev.py          vývojový server webového UI (ukázková data / proxy na zařízení)
   esphome.sh            config / compile / run / logs
   scad.sh               export STL (šablona, mřížka, kryt čidla) do hw/stl/
 ```
@@ -87,6 +90,36 @@ Kontrola po každé změně profilů nebo dashboardu:
 scripts/check_dashboard.py   # potřebuje PyYAML a node (PyYAML má i python ESPHome)
 ```
 
+## Webové rozhraní zařízení
+
+Zařízení má na `http://susicka-maso.local/` vlastní stránku místo standardní stránky ESPHome
+(přihlášení `web_username` / `web_password`). Je uložená ve firmwaru (15 kB gzip), funguje
+bez internetu i bez Home Assistantu a má stejný obsah jako dashboard v2:
+
+- komora (teplota, vlhkost, průběh od otevření stránky), ventilátory a režim, ruční výkon,
+- program s časovou osou fází, start/stop, upozornění na zásah s tlačítkem „Zásah proveden“,
+- průvodce profily s volbou profilu, nastavení regulace, provoz a výpadky, restart, log.
+
+Akce měnící stav (start, stop, profil, restart, vynulování) si vyžádají potvrzení.
+Tlačítko „Původní rozhraní“ načte stránku ESPHome z internetu.
+
+Rozhraní je komponenta [esphome/components/susicka_ui](esphome/components/susicka_ui),
+zapíná ji balíček [webui.yaml](esphome/packages/webui.yaml) a `external_components`
+v konfiguraci zařízení. Texty průvodce jsou v `guide.yaml`, `scripts/check_dashboard.py`
+hlídá shodu s `profiles.yaml` a s dashboardem v2.
+
+Omezení: v záložní síti `susicka-maso fallback` (zařízení se nepřipojí k WiFi) obsluhuje
+všechny stránky captive portál pro nastavení WiFi, webové rozhraní tam není dostupné.
+
+Vývoj bez nahrávání firmwaru:
+
+```sh
+P=$(head -1 $(command -v esphome) | cut -c3-)      # python s PyYAML
+$P scripts/webui_dev.py --mock                    # ukázková data (běžící program, zásah)
+$P scripts/webui_dev.py --device susicka-maso.local   # živá data, ovládání se jen loguje
+# http://localhost:8099/
+```
+
 ## Dokumentace
 
 - [Zapojení](docs/zapojeni.md)
@@ -111,4 +144,6 @@ scripts/check_dashboard.py   # potřebuje PyYAML a node (PyYAML má i python ESP
 - [x] Dashboard v2 ve stylu Přehledu s průvodcem profily
 - [x] Nasadit dashboard v2 v HA (`/dashboard-susicka`)
 - [ ] Ověřit vzhled dashboardu s živými daty zařízení
+- [x] Vlastní webové rozhraní zařízení (bez HA a internetu), nasazeno přes OTA
+- [ ] Rozhodnout: webové UI i v záložní síti (bez `captive_portal`, WiFi pak jen přes flash)
 - [ ] Volitelně: tenzometr HX711 (konec podle úbytku hmotnosti), SHT41 místo HTU21D
