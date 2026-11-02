@@ -101,6 +101,7 @@ bez internetu i bez Home Assistantu a má stejný obsah jako dashboard v2:
 - průvodce profily s volbou profilu, nastavení regulace, provoz a výpadky, restart, log.
 
 Akce měnící stav (start, stop, profil, restart, vynulování) si vyžádají potvrzení.
+Vzhled se přepíná v hlavičce (Auto podle systému / světlý / tmavý), volba se pamatuje v prohlížeči.
 Tlačítko „Původní rozhraní“ načte stránku ESPHome z internetu.
 
 Rozhraní je komponenta [esphome/components/susicka_ui](esphome/components/susicka_ui),

@@ -30,6 +30,9 @@
   const COLORS = ['#3b82f6', '#14b8a6', '#f4a300', '#7c4dff'];
   const HIST_KEY = 'susicka-hist';
   const HIST_MAX = 360;  // 6 h at one sample per minute
+  const THEME_KEY = 'susicka-theme';
+  const THEMES = [['system', 'Auto', 'Podle systému'], ['light', '☀', 'Světlý'], ['dark', '☾', 'Tmavý']];
+  const darkMq = matchMedia('(prefers-color-scheme: dark)');
 
   const S = {};       // key -> last entity JSON
   const legacy = {};  // old id "sensor-teplota" -> key, for firmware without name_id
@@ -41,6 +44,8 @@
   let guideInit = false;
   let hist = { t: [], rh: [] };
   try { hist = JSON.parse(localStorage.getItem(HIST_KEY)) || hist; } catch (e) { /* private mode */ }
+  let theme = 'system';
+  try { theme = localStorage.getItem(THEME_KEY) || theme; } catch (e) { /* private mode */ }
 
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';');
@@ -389,6 +394,11 @@
     if (!pending) { pending = true; setTimeout(render, 150); }
   }
 
+  function applyTheme() {
+    document.documentElement.dataset.theme = theme === 'system' ? (darkMq.matches ? 'dark' : 'light') : theme;
+    document.querySelectorAll('[data-do="theme"]').forEach((b) => b.classList.toggle('on', b.dataset.opt === theme));
+  }
+
   function addLog(line) {
     const el = $('log');
     if (!el) return;
@@ -428,6 +438,10 @@
       setNum(d.k, v);
     } else if (d.do === 'classic') {
       classic();
+    } else if (d.do === 'theme') {
+      theme = d.opt;
+      try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* private mode */ }
+      applyTheme();
     }
   });
 
@@ -462,7 +476,9 @@
   document.head.insertAdjacentHTML('beforeend', '<meta name="viewport" content="width=device-width,initial-scale=1">'
     + `<style id="ui-css">${UI_CSS}</style>`);
   document.title = 'Sušička na maso';
-  document.body.innerHTML = '<header><h1 id="title">Sušička na maso</h1><span id="conn" class="pill"><i></i><span>připojuji</span></span></header>'
+  document.body.innerHTML = '<header><h1 id="title">Sušička na maso</h1><div class="theme" role="group" aria-label="Vzhled">'
+    + THEMES.map(([v, t, title]) => `<button data-do="theme" data-opt="${v}" title="${title}" aria-label="${title}">${t}</button>`).join('')
+    + '</div><span id="conn" class="pill"><i></i><span>připojuji</span></span></header>'
     + '<main><div id="alerts"></div><div class="grid">'
     + '<section class="card" id="c-room"></section><section class="card" id="c-fan"></section>'
     + '<section class="card" id="c-prog"></section>'
@@ -476,6 +492,8 @@
     if (online && Date.now() - lastMsg > 40000) { online = false; schedule(); }
   }, 5000);
 
+  darkMq.addEventListener('change', applyTheme);
+  applyTheme();
   render();
   connect();
 })();
